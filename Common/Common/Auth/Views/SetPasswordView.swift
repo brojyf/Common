@@ -9,11 +9,12 @@ import SwiftUI
 
 struct SetPasswordView: View {
     
+    @EnvironmentObject var authVM: AuthVM
+    
     let scene: AuthScene
     let email: String
     @State private var password: String = ""
     @State private var passwordConfirmation: String = ""
-    @EnvironmentObject var authVM: AuthVM
     
     var body: some View {
         VStack {
@@ -36,8 +37,9 @@ struct SetPasswordView: View {
 }
 
 #Preview {
+    let dev = dev.loggedOut()
     NavigationStack {
         SetPasswordView(scene: .signup, email: "")
     }
-    .environmentObject(AuthVM())
+    .environmentObject(dev.authVM)
 }

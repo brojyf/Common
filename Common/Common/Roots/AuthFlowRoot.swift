@@ -26,10 +26,12 @@ struct AuthFlowRoot: View {
                     }
                 }
         }
+        .task { authVM.resetFlow() }
     }
 }
 
 #Preview {
+    let dev = dev.loggedOut()
     AuthFlowRoot()
-        .environmentObject(AuthVM())
+        .environmentObject(dev.authVM)
 }

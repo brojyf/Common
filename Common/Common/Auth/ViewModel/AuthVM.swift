@@ -12,8 +12,20 @@ final class AuthVM: ObservableObject {
 
     @Published var path = NavigationPath()
     
+    private let session: SessionStore
+    
+    init(session: SessionStore) {
+        self.session = session
+    }
+    
     // MARK: - Router Methods
-    func login(email: String, password: String){}
+    func login(email: String, password: String){
+        session.login()
+    }
+    
+    func setUsernameFirstTime(){
+        session.login()
+    }
     
     func createAcctounWithRouter(){
         path.append(AuthRoute.setUsername)
@@ -39,4 +51,6 @@ final class AuthVM: ObservableObject {
     func signupWithRouter(){
         path.append(AuthRoute.sendCode(scene: .signup))
     }
+    
+    func resetFlow() { path = .init() }
 }

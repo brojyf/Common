@@ -9,15 +9,16 @@ import SwiftUI
 
 struct SetUsernameView: View {
     
+    @EnvironmentObject var authVM: AuthVM
+    
     @State private var username: String = ""
     
     var body: some View {
         VStack {
             InputField("Username", text: $username)
             Button("Submit"){
-                
+                authVM.setUsernameFirstTime()
             }
-            
         }
         .padding()
         .navigationBarTitle("Set Username")
@@ -25,7 +26,9 @@ struct SetUsernameView: View {
 }
 
 #Preview {
+    let dev = dev.loggedOut()
     NavigationStack {
         SetUsernameView()
     }
+    .environmentObject(dev.authVM)
 }

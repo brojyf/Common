@@ -9,9 +9,21 @@ import SwiftUI
 
 @main
 struct CommonApp: App {
+    
+    @StateObject private var session: SessionStore
+    @StateObject private var authVM: AuthVM
+    
+    init() {
+        let session = SessionStore()
+        _session = StateObject(wrappedValue: session)
+        _authVM = StateObject(wrappedValue: AuthVM(session: session))
+    }
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
+        .environmentObject(session)
+        .environmentObject(authVM)
     }
 }

@@ -9,9 +9,10 @@ import SwiftUI
 
 struct LoginView: View {
     
+    @EnvironmentObject var vm: AuthVM
+    
     @State private var email: String = ""
     @State private var password: String = ""
-    @EnvironmentObject var vm: AuthVM
     
     var body: some View {
         VStack {
@@ -25,10 +26,11 @@ struct LoginView: View {
 
 // MARK: - Preview
 #Preview {
+    let dev = dev.loggedIn()
     NavigationStack {
         LoginView()
     }
-    .environmentObject(AuthVM())
+    .environmentObject(dev.authVM)
 }
 
 // MARK: - Extension
@@ -36,7 +38,9 @@ extension LoginView {
     private var buttonsSection: some View {
         VStack {
             Button("Login") {
-                vm.login(email: email, password: password)
+                withAnimation(.spring){
+                    vm.login(email: email, password: password)
+                }
             }
             
             HStack {

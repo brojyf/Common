@@ -9,11 +9,12 @@ import SwiftUI
 
 struct VerificationView: View {
     
+    @EnvironmentObject var authVM: AuthVM
+    
     let email: String
     let scene: AuthScene
     @State private var code: String = ""
-    @EnvironmentObject var authVM: AuthVM
-    
+
     var body: some View {
         VStack {
             Text("Code has been sent to \(email).")
@@ -29,8 +30,9 @@ struct VerificationView: View {
 }
 
 #Preview {
+    let dev = dev.loggedIn()
     NavigationStack {
         VerificationView(email: "test@test.com", scene: .signup)
     }
-    .environmentObject(AuthVM())
+    .environmentObject(dev.authVM)
 }

@@ -9,9 +9,10 @@ import SwiftUI
 
 struct SendCodeView: View {
     
+    @EnvironmentObject var vm: AuthVM
+    
     let scene: AuthScene
     @State private var email: String = ""
-    @EnvironmentObject var vm: AuthVM
     
     var body: some View {
         VStack {
@@ -26,14 +27,16 @@ struct SendCodeView: View {
 }
 
 #Preview {
+    let dev = dev.loggedOut()
     NavigationStack {
         SendCodeView(scene: .signup)
     }
-    .environmentObject(AuthVM())
+    .environmentObject(dev.authVM)
 }
 #Preview {
+    let dev = dev.loggedOut()
     NavigationStack {
         SendCodeView(scene: .resetPassword)
     }
-    .environmentObject(AuthVM())
+    .environmentObject(dev.authVM)
 }
