@@ -1,0 +1,94 @@
+# Guideline
+## 1. No 500 status code
+## 2. Skip unnecessary description
+## 3. Lower case except long description
+
+openapi: 3.1.0
+info:
+  title: Common App
+  description: The API for Common APP
+  version: 0.0.0
+
+servers:
+  - url: 'http://localhost:8080'
+    description: development environment
+  - url: 'https://patjiang.dpdns.org'
+    description: production environment
+
+tags:
+  - name: Auth
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Atk:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          description: access token expiration time in second
+    Error:
+      type: object
+      required: [error]
+      properties:
+        code:
+          type: string
+          example: ATK_EXPIRED
+        error:
+          type: string
+
+
+paths:
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: using refresh token to get new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+      responses:
+        '200':
+          description: return new access token successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Atk'
+        '400':
+          description: invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: invalid refresh token or refresh token expires
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ping:
+    get:
+      summary: check server health
+      description: public endpoint, no auth required
+      security: []
+      responses:
+        '200':
+          description: server is working correctly
+          content:
+            text/plain:
+              example: 'pong'
