@@ -15,8 +15,13 @@ servers:
   - url: 'https://patjiang.dpdns.org'
     description: production environment
 
+security:
+  - BearerAuth: []
+
 tags:
   - name: Auth
+    description:
+  - name: User
 
 components:
   securitySchemes:
@@ -24,20 +29,63 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    SignupBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   schemas:
-    Atk:
+    # Business Objects
+    AuthResponse:
       type: object
-      required: [access_token, token_type, expires_in]
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - refresh_token
+        - user_id
       properties:
         access_token:
           type: string
+          description: JWT
         token_type:
           type: string
-          example: Bearer
         expires_in:
           type: integer
-          description: access token expiration time in second
+        refresh_token:
+          type: string
+        user_id:
+          type: integer
+          format: int64
+          description: unsigned integer 54
+    EmailAndPassword:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/Password'
+    # Basics
+    Username:
+      type: string
+      maxLength: 50
+      description: only letters and digits
+    Password:
+      type: string
+      minLength: 8
+      maxLength: 20
+      pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).*$'
+      description: >
+        must be 8-20 characters long, and contain at least one lowercase letter, 
+        one uppercase letter, one digit, and one special character
+    Email:
+      type: string
+      format: email
+      maxLength: 255
+    Scene:
+      type: string
+      enum: [signup, reset_password]
     Error:
       type: object
       required: [error]
@@ -48,12 +96,215 @@ components:
         error:
           type: string
 
-
 paths:
+  /user/me/set-username:
+    patch:
+      summary: update username
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: username updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [username]
+                properties:
+                  username:
+                    $ref: '#/components/schemas/Username'
+        '400':
+          description: invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/create-account:
+    post:
+      summary: create account with signup token and return auth response
+      tags: [Auth]
+      security:
+        - SignupBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailAndPassword'
+      responses:
+        '200':
+          description: account created, return access/refresh tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: invalid signup token expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: email already exits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/verify-code:
+    post:
+      summary: verify the code sent to email and return signup token
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, scene, code]
+              properties:
+                email:
+                  $ref: '#/components/schemas/Email'
+                scene:
+                  $ref: '#/components/schemas/Scene'
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+      responses:
+        '200':
+          description: verification success, return signup token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [signup_token]
+                properties:
+                  signup_token:
+                    type: string
+        '400':
+          description: invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: invalid code or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/request-code:
+    post:
+      summary: apply for verification code
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, scene]
+              properties:
+                email:
+                  $ref: '#/components/schemas/Email'
+                scene:
+                  $ref: '#/components/schemas/Scene'
+      responses:
+        '200':
+          description: always return true to avoid attacks
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cooldown_seconds]
+                properties:
+                  cooldown_seconds:
+                    type: integer
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: frequency limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      summary: user login
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailAndPassword"
+      responses:
+        '200':
+          description: login successfully, return access token and refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: login failed, check error code for more information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  invalid_credential:
+                    value: {"code": "INVALID_CREDENTIALS", "error": "username or password incorrect"}
+                  account_not_found:
+                    value: {"code": "ACCOUNT_NOT_FOUND", "error": "cannot find email"}
+        '429':
+          description: frequency limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/refresh:
     post:
-      tags: [auth]
       summary: using refresh token to get new access token
+      tags: [Auth]
+      security: []
       requestBody:
         required: true
         content:
@@ -61,13 +312,26 @@ paths:
             schema:
               type: object
               required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
       responses:
         '200':
           description: return new access token successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Atk'
+                type: object
+                required: [ access_token, token_type, expires_in ]
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    description: access token expiration time in seconds
         '400':
           description: invalid request body
           content:
@@ -84,7 +348,6 @@ paths:
   /ping:
     get:
       summary: check server health
-      description: public endpoint, no auth required
       security: []
       responses:
         '200':
