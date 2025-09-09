@@ -21,6 +21,7 @@ enum API {
         static let verifyCode    = authBase.appendingPathComponent("verify-code")
         static let createAccount = authBase.appendingPathComponent("create-account")
         static let refresh       = authBase.appendingPathComponent("refresh")
+        static let resetPassword = authBase.appendingPathComponent("reset-password")
     }
     
     enum User {

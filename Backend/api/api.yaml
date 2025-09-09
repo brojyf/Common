@@ -135,6 +135,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /auth/reset-password:
+    
+
   /auth/create-account:
     post:
       summary: create account with signup token and return auth response

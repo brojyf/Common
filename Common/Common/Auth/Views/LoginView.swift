@@ -11,6 +11,7 @@ struct LoginView: View {
     
     @State private var email: String = ""
     @State private var password: String = ""
+    @EnvironmentObject var vm: AuthVM
     
     var body: some View {
         VStack {
@@ -27,6 +28,7 @@ struct LoginView: View {
     NavigationStack {
         LoginView()
     }
+    .environmentObject(AuthVM())
 }
 
 // MARK: - Extension
@@ -34,17 +36,13 @@ extension LoginView {
     private var buttonsSection: some View {
         VStack {
             Button("Login") {
-                // vm.login
+                vm.login(email: email, password: password)
             }
             
             HStack {
-                NavigationLink("Forget password?"){
-                    
-                }
+                Button("Forget Password"){ vm.forgotPasswordWithRouter() }
                 Spacer()
-                NavigationLink("Signup"){
-                    SignupView()
-                }
+                Button("Signup"){ vm.signupWithRouter() }
             }
         }
     }
