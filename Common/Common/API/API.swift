@@ -24,11 +24,7 @@ enum API {
         static let forgetPassword = authBase.appendingPathComponent("forget-password")
         static let resetPassword  = authBase.appendingPathComponent("reset-password")
         static let logoutAll      = authBase.appendingPathComponent("logout-all")
+        static let setUsername    = authBase.appendingPathComponent("me/set-username")
     }
     
-    enum User {
-        private static let userBase = base.appendingPathComponent("user")
-        
-        static let setUsername  = userBase.appendingPathComponent("set-username")
-    }
 }

@@ -21,7 +21,6 @@ security:
 tags:
   - name: Auth
     description:
-  - name: User
 
 components:
   securitySchemes:
@@ -97,10 +96,10 @@ components:
           type: string
 
 paths:
-  /user/me/set-username:
+  /auth/me/set-username:
     patch:
       summary: update username
-      tags: [User]
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -136,10 +135,14 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /auth/logout-all:
+    post:
+      summary: log out all devices
+      tags: [Auth]
 
   /auth/reset-password:
     patch:
       summary: reset password when logged in
+      tags: [Auth]
 
   /auth/forget-password:
     post:
