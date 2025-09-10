@@ -54,3 +54,15 @@ final class AuthVM: ObservableObject {
     
     func resetFlow() { path = .init() }
 }
+
+// Mark: -- AuthRoute and AuthScene
+enum AuthRoute: Hashable {
+    case sendCode(scene: AuthScene)
+    case verify(email: String, scene: AuthScene)
+    case setPassword(email: String, scene: AuthScene)
+    case setUsername
+}
+
+enum AuthScene: Hashable {
+    case signup, resetPassword
+}
