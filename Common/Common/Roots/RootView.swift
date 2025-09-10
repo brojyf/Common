@@ -19,7 +19,7 @@ struct RootView: View {
                     MainAppRoot()
                 }
             } else {
-                AuthFlowRoot()
+                LoginFlowRoot()
             }
         }
     }

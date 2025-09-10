@@ -1,5 +1,5 @@
 //
-//  AuthFlowRoot.swift
+//  LoginFlowRoot.swift
 //  Common
 //
 //  Created by 江逸帆 on 9/9/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct AuthFlowRoot: View {
+struct LoginFlowRoot: View {
     @EnvironmentObject var authVM: AuthVM
     
     var body: some View {
@@ -32,6 +32,6 @@ struct AuthFlowRoot: View {
 
 #Preview {
     let dev = dev.loggedOut()
-    AuthFlowRoot()
+    LoginFlowRoot()
         .environmentObject(dev.authVM)
 }
