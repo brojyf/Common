@@ -1,27 +1,72 @@
 package handlers
 
 import (
+	"Backend/internal/services"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
-func HandleLogout(c *gin.Context) {}
+type AuthHandler interface {
+	HandleRefresh(*gin.Context)
+	HandleLogin(*gin.Context)
+	HandleRequestCode(*gin.Context)
+	HandleVerifyCode(*gin.Context)
+	HandleCreateAccount(*gin.Context)
+	HandleForgetPassword(*gin.Context)
+	HandleResetPassword(*gin.Context)
+	HandleSetUsername(*gin.Context)
+	HandleLogout(*gin.Context)
+	HandleLogoutAll(*gin.Context)
+}
 
-func HandleLogoutAll(c *gin.Context) {}
+type authHandler struct {
+	authSvc services.AuthService
+}
 
-func HandleRefresh(c *gin.Context) {}
+func NewAuthHandler(svc services.AuthService) AuthHandler {
+	return &authHandler{authSvc: svc}
+}
 
-func HandleSetUsername(c *gin.Context) {}
+func (h *authHandler) HandleLogout(c *gin.Context) {}
 
-func HandleResetPassword(c *gin.Context) {}
+func (h *authHandler) HandleLogoutAll(c *gin.Context) {}
 
-func HandleForgetPassword(c *gin.Context) {}
+func (h *authHandler) HandleRefresh(c *gin.Context) {}
 
-func HandleCreateAccount(c *gin.Context) {}
+func (h *authHandler) HandleSetUsername(c *gin.Context) {}
 
-func HandleVerifyCode(c *gin.Context) {}
+func (h *authHandler) HandleResetPassword(c *gin.Context) {}
 
-func HandleRequestCode(c *gin.Context) {}
+func (h *authHandler) HandleForgetPassword(c *gin.Context) {}
 
-func HandleLogin(c *gin.Context) {
+func (h *authHandler) HandleCreateAccount(c *gin.Context) {}
 
+func (h *authHandler) HandleVerifyCode(c *gin.Context) {}
+
+func (h *authHandler) HandleRequestCode(c *gin.Context) {
+	var req struct {
+		Email string `json:"email"`
+		Scene string `json:"scene"`
+	}
+	// 400: Invalid Req Body
+	if err := c.Bind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// 429: Too Many Req
+	if err := services.CheckRequestCodeThrottle(req.Email, req.Scene); err != nil {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+		return
+	}
+	// 500: Internal Server Error
+	if err := services.RequestCode(req.Email, req.Scene); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// 200: OK
+	c.Status(200)
+}
+
+func (h *authHandler) HandleLogin(c *gin.Context) {
 }

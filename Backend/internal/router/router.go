@@ -3,12 +3,25 @@ package router
 import (
 	"Backend/internal/handlers"
 	"Backend/internal/middleware"
+	"Backend/internal/repo"
+	"Backend/internal/services"
+	"database/sql"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
-func SetupRouter() *gin.Engine {
+type Deps struct {
+	DB  *sql.DB
+	RDB *redis.Client
+}
+
+func SetupRouter(d Deps) *gin.Engine {
 	r := gin.Default()
+
+	authRepo := repo.NewAuthRepo(d.DB, d.RDB)
+	authSvc := services.NewAuthService(authRepo)
+	authH := handlers.NewAuthHandler(authSvc)
 
 	apiGroup := r.Group("/api")
 	{
@@ -16,16 +29,16 @@ func SetupRouter() *gin.Engine {
 
 		authGroup := apiGroup.Group("/auth")
 		{
-			authGroup.POST("/refresh", handlers.HandleRefresh)
-			authGroup.POST("/login", handlers.HandleLogin)
-			authGroup.POST("/request-code", handlers.HandleRequestCode)
-			authGroup.POST("/verify-code", handlers.HandleVerifyCode)
-			authGroup.POST("/create-account", middleware.OPTMiddleware(), handlers.HandleCreateAccount)
-			authGroup.POST("/forget-password", middleware.OPTMiddleware(), handlers.HandleForgetPassword)
-			authGroup.PATCH("/reset-password", middleware.ATKMiddleware(), handlers.HandleResetPassword)
-			authGroup.POST("/logout-all", middleware.ATKMiddleware(), handlers.HandleLogoutAll)
-			authGroup.PATCH("/me/set-username", middleware.ATKMiddleware(), handlers.HandleSetUsername)
-			authGroup.POST("/logout", middleware.ATKMiddleware(), handlers.HandleLogout)
+			authGroup.POST("/refresh", authH.HandleRefresh)
+			authGroup.POST("/login", authH.HandleLogin)
+			authGroup.POST("/request-code", authH.HandleRequestCode)
+			authGroup.POST("/verify-code", authH.HandleVerifyCode)
+			authGroup.POST("/create-account", middleware.OPTMiddleware(), authH.HandleCreateAccount)
+			authGroup.POST("/forget-password", middleware.OPTMiddleware(), authH.HandleForgetPassword)
+			authGroup.PATCH("/reset-password", middleware.ATKMiddleware(), authH.HandleResetPassword)
+			authGroup.POST("/logout-all", middleware.ATKMiddleware(), authH.HandleLogoutAll)
+			authGroup.PATCH("/me/set-username", middleware.ATKMiddleware(), authH.HandleSetUsername)
+			authGroup.POST("/logout", middleware.ATKMiddleware(), authH.HandleLogout)
 		}
 	}
 
