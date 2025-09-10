@@ -43,6 +43,7 @@ components:
         - expires_in
         - refresh_token
         - user_id
+        - device_id
       properties:
         access_token:
           type: string
@@ -57,6 +58,8 @@ components:
           type: integer
           format: int64
           description: unsigned integer 54
+        device_id:
+          type: string
     EmailAndPassword:
       type: object
       required: [email, password]
@@ -353,9 +356,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [refresh_token]
+              required: [refresh_token, device_id]
               properties:
                 refresh_token:
+                  type: string
+                device_id:
                   type: string
       responses:
         '200':
