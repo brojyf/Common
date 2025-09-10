@@ -15,14 +15,14 @@ func main() {
 
 	// 2. Init db
 
-	// Set up router
+	// 3. Set up router
 	// Production mode：gin.SetMode(gin.ReleaseMode)
 	r := router.SetupRouter()
 
-	// Start Server
+	// 4. Start Server
 	addr := ":8080"
 	log.Printf("Listening on %s...", addr)
 	if err := r.Run(addr); err != nil {
-		log.Fatal(err)
+		log.Fatal("Error starting server", err)
 	}
 }
