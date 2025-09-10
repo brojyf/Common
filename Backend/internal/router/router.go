@@ -25,6 +25,7 @@ func SetupRouter() *gin.Engine {
 			authGroup.PATCH("/reset-password", middleware.ATKMiddleware(), handlers.HandleResetPassword)
 			authGroup.POST("/logout-all", middleware.ATKMiddleware(), handlers.HandleLogoutAll)
 			authGroup.PATCH("/me/set-username", middleware.ATKMiddleware(), handlers.HandleSetUsername)
+			authGroup.POST("/logout", middleware.ATKMiddleware(), handlers.HandleLogout)
 		}
 	}
 

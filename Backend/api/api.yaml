@@ -99,6 +99,11 @@ components:
           type: string
 
 paths:
+  /auth/logout:
+    post:
+      summary: logout and delete device id
+      tags: [Auth]
+
   /auth/me/set-username:
     patch:
       summary: update username
