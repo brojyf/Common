@@ -27,7 +27,7 @@ struct SetPasswordView: View {
                 }
             } else {
                 Button("Reset"){
-                    authVM.resetPasswordWihtRouter()
+                    authVM.forgetAndResetPassword()
                 }
             }
         }

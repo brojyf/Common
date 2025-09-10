@@ -135,8 +135,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/reset-password:
+  /auth/logout-all:
     
+
+  /auth/reset-password:
+    patch:
+      summary: reset password when logged in
+
+  /auth/forget-password:
+    post:
+      summary: reset password when forget password
 
   /auth/create-account:
     post:

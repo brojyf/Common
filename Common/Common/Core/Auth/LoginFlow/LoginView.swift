@@ -44,7 +44,7 @@ extension LoginView {
             }
             
             HStack {
-                Button("Forget Password"){ vm.forgotPasswordWithRouter() }
+                Button("Forget Password"){ vm.forgetPasswordWithRouter() }
                 Spacer()
                 Button("Signup"){ vm.signupWithRouter() }
             }

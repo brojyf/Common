@@ -10,6 +10,7 @@ import SwiftUI
 
 final class AuthVM: ObservableObject {
 
+    // Route Function = Current View
     @Published var path = NavigationPath()
     
     private let session: SessionStore
@@ -30,7 +31,8 @@ final class AuthVM: ObservableObject {
     func createAcctounWithRouter(){
         path.append(AuthRoute.setUsername)
     }
-    func resetPasswordWihtRouter(){
+    
+    func forgetAndResetPassword(){
         withAnimation {
             path = NavigationPath()
         }
@@ -44,7 +46,7 @@ final class AuthVM: ObservableObject {
         path.append(AuthRoute.verify(email: email, scene: scene))
     }
     
-    func forgotPasswordWithRouter(){
+    func forgetPasswordWithRouter(){
         path.append(AuthRoute.sendCode(scene: .resetPassword))
     }
     

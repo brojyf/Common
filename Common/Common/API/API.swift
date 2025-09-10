@@ -17,11 +17,13 @@ enum API {
     enum Auth {
         private static let authBase = base.appendingPathComponent("auth")
                 
-        static let requestCode   = authBase.appendingPathComponent("request-code")
-        static let verifyCode    = authBase.appendingPathComponent("verify-code")
-        static let createAccount = authBase.appendingPathComponent("create-account")
-        static let refresh       = authBase.appendingPathComponent("refresh")
-        static let resetPassword = authBase.appendingPathComponent("reset-password")
+        static let requestCode    = authBase.appendingPathComponent("request-code")
+        static let verifyCode     = authBase.appendingPathComponent("verify-code")
+        static let createAccount  = authBase.appendingPathComponent("create-account")
+        static let refresh        = authBase.appendingPathComponent("refresh")
+        static let forgetPassword = authBase.appendingPathComponent("forget-password")
+        static let resetPassword  = authBase.appendingPathComponent("reset-password")
+        static let logoutAll      = authBase.appendingPathComponent("logout-all")
     }
     
     enum User {
