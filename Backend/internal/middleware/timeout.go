@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TimeOut(d time.Duration) gin.HandlerFunc {
+func Timeout(d time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// Create ctx with time out

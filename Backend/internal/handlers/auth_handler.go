@@ -64,7 +64,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		return
 	}
 	// 500: Internal Server Error
-	if err := h.authSvc.RequestCode(req.Email, req.Scene); err != nil {
+	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

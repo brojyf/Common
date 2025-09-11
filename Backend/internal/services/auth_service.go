@@ -2,6 +2,7 @@ package services
 
 import (
 	"Backend/internal/repo"
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -9,7 +10,7 @@ import (
 
 type AuthService interface {
 	// RequestCode
-	RequestCode(email, scene string) error
+	RequestCode(ctx context.Context, email, scene string) error
 	CheckRequestCodeThrottle(email, scene string) error
 }
 
@@ -28,7 +29,7 @@ func (s *authService) CheckRequestCodeThrottle(email, scene string) error {
 	return nil
 }
 
-func (s *authService) RequestCode(email, scene string) error {
+func (s *authService) RequestCode(ctx context.Context, email, scene string) error {
 	// Check email
 	email = strings.ToLower(strings.TrimSpace(email))
 	if !isValidEmail(email) {
