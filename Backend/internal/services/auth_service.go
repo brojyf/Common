@@ -7,7 +7,11 @@ import (
 	"strings"
 )
 
-type AuthService interface{}
+type AuthService interface {
+	// RequestCode
+	RequestCode(email, scene string) error
+	CheckRequestCodeThrottle(email, scene string) error
+}
 
 type authService struct {
 	authRepo repo.AuthRepo
@@ -17,14 +21,14 @@ func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
 }
 
-func CheckRequestCodeThrottle(email, scene string) error {
+func (s *authService) CheckRequestCodeThrottle(email, scene string) error {
 	if true {
 		return fmt.Errorf("request code throttled")
 	}
 	return nil
 }
 
-func RequestCode(email, scene string) error {
+func (s *authService) RequestCode(email, scene string) error {
 	// Check email
 	email = strings.ToLower(strings.TrimSpace(email))
 	if !isValidEmail(email) {

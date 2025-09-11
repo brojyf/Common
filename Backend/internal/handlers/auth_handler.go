@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"Backend/internal/services"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -49,18 +50,21 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		Email string `json:"email"`
 		Scene string `json:"scene"`
 	}
+	ctx := c.Request.Context()
+	fmt.Print(ctx)
+
 	// 400: Invalid Req Body
 	if err := c.Bind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	// 429: Too Many Req
-	if err := services.CheckRequestCodeThrottle(req.Email, req.Scene); err != nil {
+	if err := h.authSvc.CheckRequestCodeThrottle(req.Email, req.Scene); err != nil {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
 		return
 	}
 	// 500: Internal Server Error
-	if err := services.RequestCode(req.Email, req.Scene); err != nil {
+	if err := h.authSvc.RequestCode(req.Email, req.Scene); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
