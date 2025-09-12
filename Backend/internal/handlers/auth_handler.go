@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Backend/internal/httpx"
 	"Backend/internal/services"
 	"net/http"
 
@@ -53,20 +54,32 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 
 	// 400: Invalid Req Body
 	if err := c.Bind(&req); err != nil {
+		if httpx.ShouldSkipWrite(c, err) {
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	// 429: Too Many Req
-	if err := h.authSvc.CheckRequestCodeThrottle(req.Email, req.Scene); err != nil {
+	if err := h.authSvc.CheckRequestCodeThrottle(ctx, req.Email, req.Scene); err != nil {
+		if httpx.ShouldSkipWrite(c, err) {
+			return
+		}
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
 		return
 	}
 	// 500: Internal Server Error
 	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene); err != nil {
+		if httpx.ShouldSkipWrite(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	// 200: OK
+	if httpx.ShouldSkipWrite(c, nil) {
+		return
+	}
 	c.Status(200)
 }
 

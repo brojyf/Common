@@ -11,7 +11,7 @@ import (
 type AuthService interface {
 	// RequestCode
 	RequestCode(ctx context.Context, email, scene string) error
-	CheckRequestCodeThrottle(email, scene string) error
+	CheckRequestCodeThrottle(ctx context.Context, email, scene string) error
 }
 
 type authService struct {
@@ -22,7 +22,7 @@ func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
 }
 
-func (s *authService) CheckRequestCodeThrottle(email, scene string) error {
+func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene string) error {
 	if true {
 		return fmt.Errorf("request code throttled")
 	}
