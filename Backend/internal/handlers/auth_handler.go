@@ -46,11 +46,11 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {}
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {}
 
 func (h *authHandler) HandleRequestCode(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		Email string `json:"email"`
 		Scene string `json:"scene"`
 	}
-	ctx := c.Request.Context()
 
 	// 400: Invalid Req Body
 	if err := c.ShouldBindJSON(&req); err != nil {
