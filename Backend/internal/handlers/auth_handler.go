@@ -53,7 +53,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// 400: Invalid Req Body
-	if err := c.Bind(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		if httpx.ShouldSkipWrite(c, err) {
 			return
 		}
