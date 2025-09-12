@@ -20,6 +20,7 @@ type Deps struct {
 func SetupRouter(d Deps) *gin.Engine {
 	r := gin.Default()
 
+	// context: RID -> Timeout
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Timeout(3 * time.Second))

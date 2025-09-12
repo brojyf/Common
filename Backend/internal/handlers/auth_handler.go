@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"Backend/internal/services"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -51,7 +50,6 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		Scene string `json:"scene"`
 	}
 	ctx := c.Request.Context()
-	fmt.Print(ctx)
 
 	// 400: Invalid Req Body
 	if err := c.Bind(&req); err != nil {

@@ -22,7 +22,11 @@ func Timeout(d time.Duration) gin.HandlerFunc {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					panicChan <- r
+					select {
+					case panicChan <- r:
+					default:
+					}
+					return
 				}
 				close(done)
 			}()
@@ -31,14 +35,13 @@ func Timeout(d time.Duration) gin.HandlerFunc {
 
 		select {
 		case <-ctx.Done():
-			// 超时，直接返回 504
+			// 504: Timeout
 			c.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{
 				"error": "request timeout",
 			})
 		case p := <-panicChan:
-			panic(p) // 让 gin.Recovery() 处理
+			panic(p)
 		case <-done:
-			// 正常执行完
 		}
 	}
 }
