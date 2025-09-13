@@ -1,12 +1,12 @@
 package router
 
 import (
+	"Backend/internal/config"
 	"Backend/internal/handlers"
 	"Backend/internal/middleware"
 	"Backend/internal/repo"
 	"Backend/internal/services"
 	"database/sql"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -23,7 +23,7 @@ func SetupRouter(d Deps) *gin.Engine {
 	// context: RID -> Timeout
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestID())
-	r.Use(middleware.Timeout(3 * time.Second))
+	r.Use(middleware.Timeout(config.REQUEST_TIMEOUT))
 	r.Use(middleware.AccessLog())
 
 	authRepo := repo.NewAuthRepo(d.DB, d.RDB)
