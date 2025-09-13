@@ -3,9 +3,7 @@ package services
 import (
 	"Backend/internal/repo"
 	"context"
-	"fmt"
 	"log"
-	"strings"
 )
 
 type AuthService interface {
@@ -23,18 +21,10 @@ func NewAuthService(authRepo repo.AuthRepo) AuthService {
 }
 
 func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene string) error {
-	if true {
-		return fmt.Errorf("request code throttled")
-	}
 	return nil
 }
 
 func (s *authService) RequestCode(ctx context.Context, email, scene string) error {
-	// Check email
-	email = strings.ToLower(strings.TrimSpace(email))
-	if !isValidEmail(email) {
-		return fmt.Errorf("invalid email")
-	}
 	// Set throttle
 
 	// Generate & Store Code
@@ -44,8 +34,4 @@ func (s *authService) RequestCode(ctx context.Context, email, scene string) erro
 	// TODO: Send via email
 	log.Printf("[DEV] Verification code for %s is: %s", email, code)
 	return nil
-}
-
-func isValidEmail(email string) bool {
-	return strings.Contains(email, "@")
 }
