@@ -1,0 +1,20 @@
+package errx
+
+import (
+	"Backend/internal/httpx"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func Write(c *gin.Context, status int, msg string) {
+	if httpx.ShouldSkipWrite(c, nil) {
+		return
+	}
+	c.JSON(status, gin.H{"error": msg})
+}
+
+func BadReq(c *gin.Context)                 { Write(c, http.StatusBadRequest, "invalid request body") }
+func BadRequest(c *gin.Context, msg string) { Write(c, http.StatusBadRequest, msg) }
+func TooManyReq(c *gin.Context)             { Write(c, http.StatusTooManyRequests, "too many requests") }
+func Internal(c *gin.Context)               { Write(c, http.StatusInternalServerError, "internal server error") }

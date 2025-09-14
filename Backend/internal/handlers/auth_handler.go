@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"Backend/internal/errx"
 	"Backend/internal/httpx"
 	"Backend/internal/services"
 	"net"
-	"net/http"
 	"net/mail"
 	"regexp"
 	"strings"
@@ -64,14 +64,14 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		if httpx.ShouldSkipWrite(c, err) {
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errx.BadReq(c)
 		return
 	}
 	if !isValidEmail(req.Email) || !isValidScene(req.Scene) {
 		if httpx.ShouldSkipWrite(c, nil) {
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email or scene"})
+		errx.BadRequest(c, "invalid email or scene")
 		return
 	}
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
@@ -80,7 +80,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		if httpx.ShouldSkipWrite(c, err) {
 			return
 		}
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+		errx.TooManyReq(c)
 		return
 	}
 	// 500: Internal Server Error
@@ -88,7 +88,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		if httpx.ShouldSkipWrite(c, err) {
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errx.TooManyReq(c)
 		return
 	}
 	// 200: OK
