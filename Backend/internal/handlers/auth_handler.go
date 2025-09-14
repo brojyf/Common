@@ -74,7 +74,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email or scene"})
 		return
 	}
-	req.Email = strings.ToLower(req.Email)
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	// 429: Too Many Req
 	if err := h.authSvc.CheckRequestCodeThrottle(ctx, req.Email, req.Scene); err != nil {
 		if httpx.ShouldSkipWrite(c, err) {
