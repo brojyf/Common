@@ -60,11 +60,18 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	}
 
 	// 400: Invalid Req Body
-	if err := c.ShouldBindJSON(&req); err != nil || !isValidEmail(req.Email) || !isValidScene(req.Scene) {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		if httpx.ShouldSkipWrite(c, err) {
 			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if !isValidEmail(req.Email) || !isValidScene(req.Scene) {
+		if httpx.ShouldSkipWrite(c, nil) {
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email or scene"})
 		return
 	}
 	req.Email = strings.ToLower(req.Email)
