@@ -1,14 +1,13 @@
-package errx
+package x
 
 import (
-	"Backend/internal/httpx"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func Write(c *gin.Context, status int, msg string) {
-	if httpx.ShouldSkipWrite(c, nil) {
+	if ShouldSkipWrite(c, nil) {
 		return
 	}
 	c.JSON(status, gin.H{"error": msg})
