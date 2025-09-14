@@ -1,9 +1,8 @@
 package handlers
 
 import (
-	"Backend/internal/errx"
-	"Backend/internal/httpx"
 	"Backend/internal/services"
+	"Backend/internal/x"
 	"net"
 	"net/mail"
 	"regexp"
@@ -61,38 +60,40 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 
 	// 400: Invalid Req Body
 	if err := c.ShouldBindJSON(&req); err != nil {
-		if httpx.ShouldSkipWrite(c, err) {
+		if x.ShouldSkipWrite(c, err) {
 			return
 		}
-		errx.BadReq(c)
+		x.BadReq(c)
 		return
 	}
 	if !isValidEmail(req.Email) || !isValidScene(req.Scene) {
-		if httpx.ShouldSkipWrite(c, nil) {
+		if x.ShouldSkipWrite(c, nil) {
 			return
 		}
-		errx.BadRequest(c, "invalid email or scene")
+		x.BadRequest(c, "invalid email or scene")
 		return
 	}
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	// 429: Too Many Req
 	if err := h.authSvc.CheckRequestCodeThrottle(ctx, req.Email, req.Scene); err != nil {
-		if httpx.ShouldSkipWrite(c, err) {
+		if x.ShouldSkipWrite(c, err) {
 			return
 		}
-		errx.TooManyReq(c)
+		x.Error(c, "authSvc.CheckRequestCodeThrottle", err)
+		x.TooManyReq(c)
 		return
 	}
 	// 500: Internal Server Error
 	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene); err != nil {
-		if httpx.ShouldSkipWrite(c, err) {
+		if x.ShouldSkipWrite(c, err) {
 			return
 		}
-		errx.TooManyReq(c)
+		x.Error(c, "authSvc.RequestCode", err)
+		x.Internal(c)
 		return
 	}
 	// 200: OK
-	if httpx.ShouldSkipWrite(c, nil) {
+	if x.ShouldSkipWrite(c, nil) {
 		return
 	}
 	c.Status(200)

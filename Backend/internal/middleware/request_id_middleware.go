@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"context"
+	"Backend/internal/pkg/request_id"
+	_ "Backend/internal/pkg/request_id"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -21,15 +22,9 @@ func RequestID() gin.HandlerFunc {
 		c.Set(headerXRequestID, rid)
 
 		// context
-		ctx := context.WithValue(c.Request.Context(), ctxKeyRID{}, rid)
+		ctx := request_id.With(c.Request.Context(), rid)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()
 	}
-}
-
-func RequestIDFromContext(ctx context.Context) (string, bool) {
-	v := ctx.Value(ctxKeyRID{})
-	rid, ok := v.(string)
-	return rid, ok
 }

@@ -1,15 +1,20 @@
 package x
 
 import (
+	"Backend/internal/pkg/request_id"
 	"log"
+
+	"golang.org/x/net/context"
 )
 
-// Error 打错误日志
-func Error(rid, op string, err error) {
-	log.Printf("[ERROR] rid=%s op=%s err=%v", rid, op, err)
+// Error Print error log
+func Error(c context.Context, op string, err error) {
+	rid, _ := request_id.From(c)
+	log.Printf("[ERROR] request_id=%s op=%s err=%v", rid, op, err)
 }
 
-// Info 打普通信息日志
-func Info(rid, op, msg string) {
-	log.Printf("[INFO] rid=%s op=%s msg=%s", rid, op, msg)
+// Info Print information log
+func Info(c context.Context, op, msg string) {
+	rid, _ := request_id.From(c)
+	log.Printf("[INFO] request_id=%s op=%s msg=%s", rid, op, msg)
 }
