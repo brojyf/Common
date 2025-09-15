@@ -196,7 +196,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailAndPassword'
+              type: object
+              required: [password]
+              properties:
+                password:
+                  $ref: '#/components/schemas/Password'
       responses:
         '201':
           description: account created, return access/refresh tokens
@@ -234,7 +238,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [otp_jti, code, email, scene]
+              required: [otp_id, code, email, scene]
               properties:
                 otp_jti:
                   type: string
@@ -293,9 +297,9 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [otp_jti]
+                required: [otp_id]
                 properties:
-                  otp_jti:
+                  otp_id:
                     type: string
         '400':
           description: invalid request

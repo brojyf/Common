@@ -5,11 +5,11 @@ curl -i -X POST http://localhost:8080/api/auth/request-code \
   -d '{"email":"patrick.jiang@plu.edu","scene":"signup"}'
 
 #Verify Code
-printf "\033[32m*** /auth/verify-code ***\033[0m\n"
+printf "\n\033[32m*** /auth/verify-code ***\033[0m\n"
 echo "Enter the code: "
 read code
 echo "Enter the JTI: "
-read jti
+read codeID
 curl -i -X POST http://localhost:8080/api/auth/verify-code \
   -H "Content-Type:application/json" \
-  -d "{\"otp_jti\":\"$jti\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"
+  -d "{\"otp_jti\":\"$codeID\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"

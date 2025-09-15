@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Backend/internal/config"
 	"Backend/internal/services"
 	"Backend/internal/x"
 	"log"
@@ -50,30 +51,52 @@ func (h *authHandler) HandleResetPassword(c *gin.Context) {}
 func (h *authHandler) HandleForgetPassword(c *gin.Context) {}
 
 func (h *authHandler) HandleCreateAccount(c *gin.Context) {
-	//ctx := c.Request.Context()
-	//var req struct {
-	//	Email    string `json:"email"`
-	//	Password string `json:"password"`
-	//}
-	//
-	//if err := c.ShouldBindJSON(&req); err != nil {
-	//	if x.ShouldSkipWrite(c, err) {
-	//		return
-	//	}
-	//	x.BadReq(c)
-	//	return
-	//}
-	//
-	//if x.ShouldSkipWrite(c, nil) {
-	//	return
-	//}
-	//c.Status(201)
+	// ctx := c.Request.Context()
+	// 401
+	scene := c.GetString("scene")
+	if scene != "signup" {
+		if x.ShouldSkipWrite(c, nil) {
+			return
+		}
+		x.Unauthorized(c)
+		return
+	}
+	// 400
+	var req struct {
+		Password string `json:"password"`
+	}
+	email := c.GetString("email")
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.BadReq(c)
+		return
+	}
+	// 409 write to db
+	log.Printf(email)
+	// 201
+	atk := ""
+	rtk := ""
+	uid := 0
+	deviceID := ""
+	if x.ShouldSkipWrite(c, nil) {
+		return
+	}
+	c.JSON(201, gin.H{
+		"access_token":  atk,
+		"token_type":    "Bearer",
+		"expires_in":    config.C.JWT.ATK,
+		"refresh_token": rtk,
+		"user_id":       uid,
+		"device_id":     deviceID,
+	})
 }
 
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
-		JTI   string `json:"otp_jti"`
+		ID    string `json:"otp_id"`
 		Code  string `json:"code"`
 		Email string `json:"email"`
 		Scene string `json:"scene"`
@@ -86,8 +109,9 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 		x.BadReq(c)
 		return
 	}
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	// 401
-	if err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code, req.JTI); err != nil {
+	if err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code, req.ID); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
@@ -145,8 +169,8 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		return
 	}
 	// 500: Internal Server
-	jti := uuid.New().String()
-	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene, jti); err != nil {
+	codeID := uuid.New().String()
+	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene, codeID); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
@@ -157,9 +181,9 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	if x.ShouldSkipWrite(c, nil) {
 		return
 	}
-	log.Printf("[DEV] JTI: %s", jti)
+	log.Printf("[DEV] codeID: %s", codeID)
 	c.JSON(200, gin.H{
-		"otp_jti": jti,
+		"otp_id": codeID,
 	})
 }
 

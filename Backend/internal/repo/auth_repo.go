@@ -61,8 +61,8 @@ func (r *authRepo) CheckThrottle(ctx context.Context, email, scene string) (bool
 	return exists > 0, nil
 }
 
-func (r *authRepo) StoreCode(ctx context.Context, code, email, scene, jti string) error {
-	k := config.RedisKeyOTP(email, scene, jti)
+func (r *authRepo) StoreCode(ctx context.Context, code, email, scene, id string) error {
+	k := config.RedisKeyOTP(email, scene, id)
 	return r.rdb.Set(ctx, k, code, config.C.RedisTTL.OTP).Err()
 }
 

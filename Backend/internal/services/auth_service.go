@@ -73,7 +73,7 @@ func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene
 	return nil
 }
 
-func (s *authService) RequestCode(ctx context.Context, email, scene, jti string) error {
+func (s *authService) RequestCode(ctx context.Context, email, scene, id string) error {
 	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.RequestCode)
 	defer cancel()
 	// Set throttle
@@ -86,7 +86,7 @@ func (s *authService) RequestCode(ctx context.Context, email, scene, jti string)
 	}
 	// Generate & Store Code
 	code := genCode()
-	if err := s.authRepo.StoreCode(cctx, code, email, scene, jti); err != nil {
+	if err := s.authRepo.StoreCode(cctx, code, email, scene, id); err != nil {
 		if x.IsCtxDone(cctx, err) {
 			return err
 		}
