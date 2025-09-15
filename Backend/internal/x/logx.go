@@ -10,7 +10,7 @@ import (
 // LogError Print error log
 func LogError(c context.Context, op string, err error) {
 	rid, _ := request_id.From(c)
-	log.Printf("[ERROR] request_id=%s op=%s err=%v", rid, op, err)
+	log.Printf("\033[31m[ERROR]\033[0m request_id=%s op=%s err=%v", rid, op, err)
 }
 
 // LogInfo Print information log
