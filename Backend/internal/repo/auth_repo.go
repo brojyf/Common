@@ -2,7 +2,6 @@ package repo
 
 import (
 	"Backend/internal/config"
-	"Backend/internal/x"
 	"context"
 	"crypto/subtle"
 	"database/sql"
@@ -13,9 +12,9 @@ import (
 )
 
 type AuthRepo interface {
-	MatchAndConsumeOTP(ctx context.Context, email, scene, code string) (bool, error)
+	MatchAndConsumeOTP(ctx context.Context, email, scene, code, jti string) (bool, error)
 	CheckThrottle(ctx context.Context, email, scene string) (bool, error)
-	StoreCode(ctx context.Context, code, email, scene string) error
+	StoreCode(ctx context.Context, code, email, scene, jti string) error
 	SetThrottle(ctx context.Context, email, scene string) error
 }
 
@@ -28,35 +27,29 @@ func NewAuthRepo(db *sql.DB, rdb *redis.Client) AuthRepo {
 	return &authRepo{db: db, rdb: rdb}
 }
 
-func (r *authRepo) MatchAndConsumeOTP(ctx context.Context, email, scene, code string) (bool, error) {
-	pattern := fmt.Sprintf("otp:%s:%s:*", email, scene)
-
-	iter := r.rdb.Scan(ctx, 0, pattern, 100).Iterator()
-	for iter.Next(ctx) {
-		if x.IsCtxDone(ctx, nil) {
-			return false, ctx.Err()
-		}
-		k := iter.Val()
-
-		v, err := r.rdb.Get(ctx, k).Result()
-		if errors.Is(err, redis.Nil) {
-			continue
-		}
-		if err != nil {
-			return false, err
-		}
-
-		if subtle.ConstantTimeCompare([]byte(v), []byte(code)) == 1 {
-			if err := r.rdb.Del(ctx, k).Err(); err != nil {
-				return false, err
-			}
-			return true, nil
-		}
+func (r *authRepo) MatchAndConsumeOTP(ctx context.Context, email, scene, code, jti string) (bool, error) {
+	key := fmt.Sprintf("otp:%s:%s:%s", email, scene, jti)
+	v, err := r.rdb.Get(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
+		return false, nil
 	}
-	if err := iter.Err(); err != nil {
+	if err != nil {
 		return false, err
 	}
-	return false, nil
+	if subtle.ConstantTimeCompare([]byte(v), []byte(code)) != 1 {
+		return false, nil
+	}
+	got, err := r.rdb.GetDel(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if subtle.ConstantTimeCompare([]byte(got), []byte(code)) != 1 {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (r *authRepo) CheckThrottle(ctx context.Context, email, scene string) (bool, error) {
@@ -68,8 +61,8 @@ func (r *authRepo) CheckThrottle(ctx context.Context, email, scene string) (bool
 	return exists > 0, nil
 }
 
-func (r *authRepo) StoreCode(ctx context.Context, code, email, scene string) error {
-	k := config.RedisKeyOTP(email, scene)
+func (r *authRepo) StoreCode(ctx context.Context, code, email, scene, jti string) error {
+	k := config.RedisKeyOTP(email, scene, jti)
 	return r.rdb.Set(ctx, k, code, config.C.RedisTTL.OTP).Err()
 }
 

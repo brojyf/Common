@@ -3,12 +3,14 @@ package handlers
 import (
 	"Backend/internal/services"
 	"Backend/internal/x"
+	"Backend/internal/x/jwt"
 	"net"
 	"net/mail"
 	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type AuthHandler interface {
@@ -47,14 +49,32 @@ func (h *authHandler) HandleResetPassword(c *gin.Context) {}
 
 func (h *authHandler) HandleForgetPassword(c *gin.Context) {}
 
-func (h *authHandler) HandleCreateAccount(c *gin.Context) {}
+func (h *authHandler) HandleCreateAccount(c *gin.Context) {
+	//ctx := c.Request.Context()
+	//var req struct {
+	//	Email    string `json:"email"`
+	//	Password string `json:"password"`
+	//}
+	//
+	//if err := c.ShouldBindJSON(&req); err != nil {
+	//	if x.ShouldSkipWrite(c, err) {
+	//		return
+	//	}
+	//	x.BadReq(c)
+	//	return
+	//}
+	//
+	//if x.ShouldSkipWrite(c, nil) {
+	//	return
+	//}
+	//c.Status(201)
+}
 
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
-		Email string `json:"email"`
-		Scene string `json:"scene"`
-		Code  string `json:"code"`
+		JTI  string `json:"otp_jti"`
+		Code string `json:"code"`
 	}
 	// 400
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -65,17 +85,32 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 		return
 	}
 	// 401
-	if err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code); err != nil {
+	email := c.GetString("email")
+	scene := c.GetString("scene")
+	if err := h.authSvc.VerifyCode(ctx, email, scene, req.Code, req.JTI); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
 		x.Unauthorized(c)
 		return
 	}
+	// 500
+	jti := uuid.NewString()
+	token, err := jwt.SignOTP(email, scene, jti)
+	if err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Internal(c)
+		return
+	}
+	//200
 	if x.ShouldSkipWrite(c, nil) {
 		return
 	}
-	c.Status(200)
+	c.JSON(200, gin.H{
+		"token": token,
+	})
 }
 
 func (h *authHandler) HandleRequestCode(c *gin.Context) {
@@ -110,7 +145,8 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		return
 	}
 	// 500: Internal Server
-	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene); err != nil {
+	jit := uuid.New().String()
+	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene, jit); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
@@ -121,7 +157,9 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	if x.ShouldSkipWrite(c, nil) {
 		return
 	}
-	c.Status(200)
+	c.JSON(200, gin.H{
+		"otp_jit": jit,
+	})
 }
 
 func isValidScene(scene string) bool {

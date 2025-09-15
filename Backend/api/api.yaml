@@ -234,8 +234,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [code]
+              required: [otp_jti, code]
               properties:
+                otp_jto:
+                  type: string
                 code:
                   type: string
                   pattern: '^[0-9]{6}$'
@@ -287,10 +289,10 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [cooldown_seconds]
+                required: [otp_jit]
                 properties:
-                  cooldown_seconds:
-                    type: integer
+                  otp_jit:
+                    type: string
         '400':
           description: invalid request
           content:

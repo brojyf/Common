@@ -6,14 +6,15 @@ import (
 	"Backend/internal/x"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
 )
 
 type AuthService interface {
-	VerifyCode(ctx context.Context, email, scene, code string) error
-	RequestCode(ctx context.Context, email, scene string) error
+	VerifyCode(ctx context.Context, email, scene, code, jti string) error
+	RequestCode(ctx context.Context, email, scene, jti string) error
 	CheckRequestCodeThrottle(ctx context.Context, email, scene string) error
 }
 
@@ -25,11 +26,11 @@ func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
 }
 
-func (s *authService) VerifyCode(ctx context.Context, email, scene, code string) error {
+func (s *authService) VerifyCode(ctx context.Context, email, scene, code, jti string) error {
 	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.VerifyCode)
 	defer cancel()
 
-	pass, err := s.authRepo.MatchAndConsumeOTP(cctx, email, scene, code)
+	pass, err := s.authRepo.MatchAndConsumeOTP(cctx, email, scene, code, jti)
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
 			return err
@@ -37,9 +38,8 @@ func (s *authService) VerifyCode(ctx context.Context, email, scene, code string)
 		x.LogError(ctx, "AuthService.VerifyCode", err)
 		return err
 	}
-
 	if !pass {
-		return fmt.Errorf("invalid or expired code")
+		return errors.New("invalid or expired token")
 	}
 	return nil
 }
@@ -62,7 +62,7 @@ func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene
 	return nil
 }
 
-func (s *authService) RequestCode(ctx context.Context, email, scene string) error {
+func (s *authService) RequestCode(ctx context.Context, email, scene, jti string) error {
 	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.RequestCode)
 	defer cancel()
 	// Set throttle
@@ -75,7 +75,7 @@ func (s *authService) RequestCode(ctx context.Context, email, scene string) erro
 	}
 	// Generate & Store Code
 	code := genCode()
-	if err := s.authRepo.StoreCode(cctx, code, email, scene); err != nil {
+	if err := s.authRepo.StoreCode(cctx, code, email, scene, jti); err != nil {
 		if x.IsCtxDone(cctx, err) {
 			return err
 		}
