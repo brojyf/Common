@@ -5,7 +5,6 @@ import (
 	"Backend/internal/config"
 	"Backend/internal/router"
 	"log"
-	"time"
 )
 
 func main() {
@@ -15,17 +14,28 @@ func main() {
 	// 2. Init db
 	db := bootstrap.NewDB(bootstrap.DBConfig{
 		DSN:             config.MYSQL_DSN,
-		MaxOpenConn:     30,
-		MaxIdleConn:     10,
-		ConnMaxLifetime: 30 * time.Minute,
-		ConnMaxIdleTime: 10 * time.Minute,
+		MaxOpenConn:     config.MYSQL_MAX_OPEN_CONNECTION,
+		MaxIdleConn:     config.MYSQL_MAX_IDLE_CONNECTION,
+		ConnMaxLifetime: config.MYSQL_CONNECTION_MAX_LIFE_TIME,
+		ConnMaxIdleTime: config.MYSQL_CONNECTION_MAX_IDLE_TIME,
 	})
 	defer func() { _ = db.Close() }()
+	rdb := bootstrap.NewRedis(bootstrap.RedisConfig{
+		Addr:         config.REDIS_ADDR,
+		Password:     config.REDIS_PASSWORD,
+		DB:           config.REDIS_DB,
+		DialTimeout:  config.REDIS_DIAL_TIMEOUT,
+		ReadTimeout:  config.REDIS_READ_TIMEOUT,
+		WriteTimeout: config.REDIS_WIRTE_TIMEOUT,
+		PingTimeout:  config.REDIS_PING_TIMEOUT,
+	})
+	defer func() { _ = rdb.Close() }()
 
 	// 3. Set up router
 	// Production mode：gin.SetMode(gin.ReleaseMode)
 	r := router.SetupRouter(router.Deps{
-		DB: db,
+		DB:  db,
+		RDB: rdb,
 	})
 
 	// 4. Start Server

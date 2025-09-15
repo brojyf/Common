@@ -2,36 +2,37 @@ package bootstrap
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/redis/go-redis/v9"
 )
 
-type DBConfig struct {
-	DSN             string
-	MaxOpenConn     int
-	MaxIdleConn     int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
+type RedisConfig struct {
+	Addr         string
+	Password     string
+	DB           int
+	DialTimeout  time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	PingTimeout  time.Duration
 }
 
-func NewDB(cfg DBConfig) *sql.DB {
-	db, err := sql.Open("mysql", cfg.DSN)
-	if err != nil {
-		log.Fatal("open mysql:", err)
-	}
+func NewRedis(cfg RedisConfig) *redis.Client {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:         cfg.Addr,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		DialTimeout:  cfg.DialTimeout,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+	})
 
-	db.SetMaxOpenConns(cfg.MaxOpenConn)
-	db.SetMaxIdleConns(cfg.MaxIdleConn)
-	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.PingTimeout)
 	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatal("ping mysql:", err)
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Fatal("ping redis:", err)
 	}
-	return db
+
+	return rdb
 }

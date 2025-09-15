@@ -82,7 +82,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		x.TooManyReq(c)
 		return
 	}
-	// 500: Internal Server Error
+	// 500: Internal Server
 	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
