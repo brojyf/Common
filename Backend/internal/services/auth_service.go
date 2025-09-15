@@ -12,6 +12,7 @@ import (
 )
 
 type AuthService interface {
+	VerifyCode(ctx context.Context, email, scene, code string) error
 	RequestCode(ctx context.Context, email, scene string) error
 	CheckRequestCodeThrottle(ctx context.Context, email, scene string) error
 }
@@ -22,6 +23,25 @@ type authService struct {
 
 func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
+}
+
+func (s *authService) VerifyCode(ctx context.Context, email, scene, code string) error {
+	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.VerifyCode)
+	defer cancel()
+
+	pass, err := s.authRepo.MatchAndConsumeOTP(cctx, email, scene, code)
+	if err != nil {
+		if x.IsCtxDone(cctx, err) {
+			return err
+		}
+		x.LogError(ctx, "AuthService.VerifyCode", err)
+		return err
+	}
+
+	if !pass {
+		return fmt.Errorf("invalid or expired code")
+	}
+	return nil
 }
 
 func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene string) error {

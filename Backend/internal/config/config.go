@@ -30,6 +30,7 @@ type MySQL struct {
 type Timeouts struct {
 	Request     time.Duration
 	RequestCode time.Duration
+	VerifyCode  time.Duration
 }
 
 type RedisTTL struct {
@@ -69,6 +70,7 @@ func Init() {
 		Timeouts: Timeouts{
 			Request:     mustGetDur("REQUEST_TIMEOUT"),
 			RequestCode: mustGetDur("REQUEST_CODE"),
+			VerifyCode:  mustGetDur("VERIFY_CODE"),
 		},
 		RedisTTL: RedisTTL{
 			OTP:         mustGetDur("OTP_TTL"),

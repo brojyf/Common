@@ -32,6 +32,9 @@ func NewAuthHandler(svc services.AuthService) AuthHandler {
 	return &authHandler{authSvc: svc}
 }
 
+func (h *authHandler) HandleLogin(c *gin.Context) {
+}
+
 func (h *authHandler) HandleLogout(c *gin.Context) {}
 
 func (h *authHandler) HandleLogoutAll(c *gin.Context) {}
@@ -46,9 +49,33 @@ func (h *authHandler) HandleForgetPassword(c *gin.Context) {}
 
 func (h *authHandler) HandleCreateAccount(c *gin.Context) {}
 
-func (h *authHandler) HandleVerifyCode(c *gin.Context) {}
-
-func (h *authHandler) HandleLogin(c *gin.Context) {
+func (h *authHandler) HandleVerifyCode(c *gin.Context) {
+	ctx := c.Request.Context()
+	var req struct {
+		Email string `json:"email"`
+		Scene string `json:"scene"`
+		Code  string `json:"code"`
+	}
+	// 400
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.BadReq(c)
+		return
+	}
+	// 401
+	if err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code); err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Unauthorized(c)
+		return
+	}
+	if x.ShouldSkipWrite(c, nil) {
+		return
+	}
+	c.Status(200)
 }
 
 func (h *authHandler) HandleRequestCode(c *gin.Context) {

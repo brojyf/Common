@@ -2,13 +2,18 @@ package repo
 
 import (
 	"Backend/internal/config"
+	"Backend/internal/x"
 	"context"
+	"crypto/subtle"
 	"database/sql"
+	"errors"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type AuthRepo interface {
+	MatchAndConsumeOTP(ctx context.Context, email, scene, code string) (bool, error)
 	CheckThrottle(ctx context.Context, email, scene string) (bool, error)
 	StoreCode(ctx context.Context, code, email, scene string) error
 	SetThrottle(ctx context.Context, email, scene string) error
@@ -21,6 +26,37 @@ type authRepo struct {
 
 func NewAuthRepo(db *sql.DB, rdb *redis.Client) AuthRepo {
 	return &authRepo{db: db, rdb: rdb}
+}
+
+func (r *authRepo) MatchAndConsumeOTP(ctx context.Context, email, scene, code string) (bool, error) {
+	pattern := fmt.Sprintf("otp:%s:%s:*", email, scene)
+
+	iter := r.rdb.Scan(ctx, 0, pattern, 100).Iterator()
+	for iter.Next(ctx) {
+		if x.IsCtxDone(ctx, nil) {
+			return false, ctx.Err()
+		}
+		k := iter.Val()
+
+		v, err := r.rdb.Get(ctx, k).Result()
+		if errors.Is(err, redis.Nil) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+
+		if subtle.ConstantTimeCompare([]byte(v), []byte(code)) == 1 {
+			if err := r.rdb.Del(ctx, k).Err(); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+	}
+	if err := iter.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 func (r *authRepo) CheckThrottle(ctx context.Context, email, scene string) (bool, error) {
