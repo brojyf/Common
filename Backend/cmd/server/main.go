@@ -9,25 +9,25 @@ import (
 
 func main() {
 	// 1. Get env
-	config.InitConfig()
+	config.Init()
 
 	// 2. Init db
 	db := bootstrap.NewDB(bootstrap.DBConfig{
-		DSN:             config.MYSQL_DSN,
-		MaxOpenConn:     config.MYSQL_MAX_OPEN_CONNECTION,
-		MaxIdleConn:     config.MYSQL_MAX_IDLE_CONNECTION,
-		ConnMaxLifetime: config.MYSQL_CONNECTION_MAX_LIFE_TIME,
-		ConnMaxIdleTime: config.MYSQL_CONNECTION_MAX_IDLE_TIME,
+		DSN:             config.C.MySQL.DSN,
+		MaxOpenConn:     config.C.MySQL.MaxOpenConnections,
+		MaxIdleConn:     config.C.MySQL.MaxIdleConnections,
+		ConnMaxLifetime: config.C.MySQL.ConnectionMaxLifetime,
+		ConnMaxIdleTime: config.C.MySQL.ConnectionMaxIdleTime,
 	})
 	defer func() { _ = db.Close() }()
 	rdb := bootstrap.NewRedis(bootstrap.RedisConfig{
-		Addr:         config.REDIS_ADDR,
-		Password:     config.REDIS_PASSWORD,
-		DB:           config.REDIS_DB,
-		DialTimeout:  config.REDIS_DIAL_TIMEOUT,
-		ReadTimeout:  config.REDIS_READ_TIMEOUT,
-		WriteTimeout: config.REDIS_WIRTE_TIMEOUT,
-		PingTimeout:  config.REDIS_PING_TIMEOUT,
+		Addr:         config.C.Redis.Addr,
+		Password:     config.C.Redis.Password,
+		DB:           config.C.Redis.DB,
+		DialTimeout:  config.C.Redis.DialTimeout,
+		ReadTimeout:  config.C.Redis.ReadTimeout,
+		WriteTimeout: config.C.Redis.WriteTimeout,
+		PingTimeout:  config.C.Redis.PingTimeout,
 	})
 	defer func() { _ = rdb.Close() }()
 

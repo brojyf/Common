@@ -23,7 +23,7 @@ func SetupRouter(d Deps) *gin.Engine {
 	// context: RID -> Timeout
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestID())
-	r.Use(middleware.Timeout(config.REQUEST_TIMEOUT))
+	r.Use(middleware.Timeout(config.C.Timeouts.Request))
 	r.Use(middleware.AccessLog())
 
 	authRepo := repo.NewAuthRepo(d.DB, d.RDB)
