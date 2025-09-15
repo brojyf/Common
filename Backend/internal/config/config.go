@@ -9,6 +9,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type JWT struct {
+	OTP time.Duration
+	ATK time.Duration
+	RTK time.Duration
+	KEY string
+}
+
 type Redis struct {
 	Addr         string
 	Password     string
@@ -43,6 +50,7 @@ type Config struct {
 	MySQL    MySQL
 	Timeouts Timeouts
 	RedisTTL RedisTTL
+	JWT      JWT
 }
 
 var C Config
@@ -75,6 +83,12 @@ func Init() {
 		RedisTTL: RedisTTL{
 			OTP:         mustGetDur("OTP_TTL"),
 			OTPThrottle: mustGetDur("OTP_THROTTLE_TTL"),
+		},
+		JWT: JWT{
+			OTP: mustGetDur("JWT_OTP"),
+			ATK: mustGetDur("JWT_ATK"),
+			RTK: mustGetDur("JWT_RTK"),
+			KEY: mustGet("JWT_KEY"),
 		},
 	}
 

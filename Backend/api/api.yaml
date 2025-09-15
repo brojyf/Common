@@ -234,12 +234,8 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, scene, code]
+              required: [code]
               properties:
-                email:
-                  $ref: '#/components/schemas/Email'
-                scene:
-                  $ref: '#/components/schemas/Scene'
                 code:
                   type: string
                   pattern: '^[0-9]{6}$'
@@ -250,7 +246,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [opt]
+                required: [token]
                 properties:
                   opt:
                     type: string

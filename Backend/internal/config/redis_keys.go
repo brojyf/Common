@@ -2,12 +2,10 @@ package config
 
 import (
 	"fmt"
-	"time"
 )
 
-func RedisKeyOTP(email, scene string) string {
-	ts := time.Now().Unix()
-	return fmt.Sprintf("otp:%s:%s:%d", email, scene, ts)
+func RedisKeyOTP(email, scene, jti string) string {
+	return fmt.Sprintf("otp:%s:%s:%s", email, scene, jti)
 }
 
 func RedisKeyThrottle(email, scene string) string {
