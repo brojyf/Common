@@ -25,6 +25,20 @@ func NewAuthService(authRepo repo.AuthRepo) AuthService {
 }
 
 func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene string) error {
+	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.RequestCode)
+	defer cancel()
+
+	has, err := s.authRepo.CheckThrottle(cctx, email, scene)
+	if err != nil {
+		if x.IsCtxDone(cctx, err) {
+			return err
+		}
+		x.LogError(ctx, "AuthService.CheckRequestCodeThrottle", err)
+		return err
+	}
+	if has {
+		return fmt.Errorf("throttle")
+	}
 	return nil
 }
 
