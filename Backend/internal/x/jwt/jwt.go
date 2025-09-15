@@ -31,4 +31,4 @@ func SignOTP(email, scene, jti string) (string, error) {
 	return tok.SignedString(config.C.JWT.KEY)
 }
 
-func parse()
+// func parse()

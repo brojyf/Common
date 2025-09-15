@@ -234,7 +234,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [otp_jti, code]
+              required: [code]
               properties:
                 otp_jto:
                   type: string
@@ -289,9 +289,9 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [otp_jit]
+                required: [otp_jti]
                 properties:
-                  otp_jit:
+                  otp_jti:
                     type: string
         '400':
           description: invalid request

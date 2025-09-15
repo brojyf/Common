@@ -4,6 +4,7 @@ import (
 	"Backend/internal/services"
 	"Backend/internal/x"
 	"Backend/internal/x/jwt"
+	"log"
 	"net"
 	"net/mail"
 	"regexp"
@@ -145,8 +146,8 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		return
 	}
 	// 500: Internal Server
-	jit := uuid.New().String()
-	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene, jit); err != nil {
+	jti := uuid.New().String()
+	if err := h.authSvc.RequestCode(ctx, req.Email, req.Scene, jti); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
@@ -157,8 +158,9 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	if x.ShouldSkipWrite(c, nil) {
 		return
 	}
+	log.Printf("[DEV] JTI: %s", jti)
 	c.JSON(200, gin.H{
-		"otp_jit": jit,
+		"otp_jit": jti,
 	})
 }
 
