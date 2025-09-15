@@ -4,6 +4,7 @@ import (
 	"Backend/internal/x/jwt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,13 @@ func OTP() gin.HandlerFunc {
 			return
 		}
 
-		// 3) 存 email 和 scene 到 gin.Context
+		// 3) 检查是否过期
+		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token expired"})
+			return
+		}
+
+		// 4) 存 email, scene, jti 到 gin.Context
 		c.Set("email", claims.Email)
 		c.Set("scene", claims.Scene)
 		c.Set("jti", claims.ID)
