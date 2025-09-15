@@ -240,7 +240,7 @@ paths:
               type: object
               required: [otp_id, code, email, scene]
               properties:
-                otp_jti:
+                otp_id:
                   type: string
                 code:
                   type: string
