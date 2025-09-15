@@ -53,7 +53,8 @@ func (h *authHandler) HandleForgetPassword(c *gin.Context) {}
 
 func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	ctx := c.Request.Context()
-	// 401
+
+	// 401: Invalid Scene
 	scene := c.GetString("scene")
 	if scene != "signup" {
 		if x.ShouldSkipWrite(c, nil) {
@@ -62,7 +63,8 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		x.Unauthorized(c)
 		return
 	}
-	// 400
+
+	// 400: Invalid req body and password
 	var req struct {
 		Password string `json:"password"`
 	}
@@ -80,7 +82,8 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		x.BadReq(c)
 		return
 	}
-	// 409 & 500: Store user
+
+	// 409 & 500: Store user in db
 	email := c.GetString("email")
 	uid, err := h.authSvc.CreateAccount(ctx, email, req.Password)
 	if err != nil {
@@ -97,6 +100,7 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		x.Conflict(c)
 		return
 	} // 409
+
 	// 500: Store device id
 	deviceID := uuid.New().String()
 	if err = h.authSvc.StoreDeviceID(ctx, deviceID, uid); err != nil {
@@ -106,7 +110,8 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		x.Internal(c)
 		return
 	}
-	// 500
+
+	// 500: Sign ARTK
 	atk, rtk, err := h.authSvc.SignARTK(ctx, uid, deviceID)
 	if err != nil {
 		if x.ShouldSkipWrite(c, err) {
@@ -146,9 +151,24 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 		x.BadReq(c)
 		return
 	}
+	if !isValidEmail(req.Email) || !isValidScene(req.Scene) {
+		if x.ShouldSkipWrite(c, nil) {
+			return
+		}
+		x.BadRequest(c, "invalid email or scene")
+		return
+	}
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	// 401
-	if err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code, req.ID); err != nil {
+	pass, err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code, req.ID)
+	if err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Internal(c)
+		return
+	} // 500
+	if !pass {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}

@@ -24,7 +24,7 @@ type AuthService interface {
 	StoreDeviceID(ctx context.Context, deviceID string, uid uint64) error
 	CreateAccount(ctx context.Context, email, password string) (uint64, error)
 	SignOTP(ctx context.Context, email, scene, jti string) (string, error)
-	VerifyCode(ctx context.Context, email, scene, code, jti string) error
+	VerifyCode(ctx context.Context, email, scene, code, jti string) (bool, error)
 	RequestCode(ctx context.Context, email, scene, jti string) error
 	CheckRequestCodeThrottle(ctx context.Context, email, scene string) error
 }
@@ -144,22 +144,22 @@ func (s *authService) SignOTP(ctx context.Context, email, scene, jti string) (st
 	return token, nil
 }
 
-func (s *authService) VerifyCode(ctx context.Context, email, scene, code, codeID string) error {
+func (s *authService) VerifyCode(ctx context.Context, email, scene, code, codeID string) (bool, error) {
 	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.VerifyCode)
 	defer cancel()
 
 	pass, err := s.authRepo.MatchAndConsumeOTP(cctx, email, scene, code, codeID)
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
-			return err
+			return false, err
 		}
 		x.LogError(ctx, "AuthService.VerifyCode", err)
-		return err
+		return false, err
 	}
 	if !pass {
-		return errors.New("invalid or expired token")
+		return false, errors.New("invalid or expired token")
 	}
-	return nil
+	return true, nil
 }
 
 func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene string) error {
