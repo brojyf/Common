@@ -36,12 +36,18 @@ func (s *authService) RequestCode(ctx context.Context, email, scene string) erro
 	defer cancel()
 	// Set throttle
 	if err := s.authRepo.SetThrottle(c, email, scene); err != nil {
+		if x.IsCtxDone(c, err) {
+			return err
+		}
 		x.LogError(ctx, "AuthService.RequestCode.SetThrottle", err)
 		return err
 	}
 	// Generate & Store Code
 	code := genCode()
 	if err := s.authRepo.StoreCode(c, code, email, scene); err != nil {
+		if x.IsCtxDone(c, err) {
+			return err
+		}
 		x.LogError(ctx, "AuthService.RequestCode.StoreCode", err)
 		return err
 	}
