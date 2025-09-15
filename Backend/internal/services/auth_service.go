@@ -29,14 +29,11 @@ func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene
 }
 
 func (s *authService) RequestCode(ctx context.Context, email, scene string) error {
-	if x.IsCtxDone(ctx, nil) {
-		return ctx.Err()
-	}
-	c, cancel := context.WithTimeout(ctx, config.C.Timeouts.RequestCode)
+	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.RequestCode)
 	defer cancel()
 	// Set throttle
-	if err := s.authRepo.SetThrottle(c, email, scene); err != nil {
-		if x.IsCtxDone(c, err) {
+	if err := s.authRepo.SetThrottle(cctx, email, scene); err != nil {
+		if x.IsCtxDone(cctx, err) {
 			return err
 		}
 		x.LogError(ctx, "AuthService.RequestCode.SetThrottle", err)
@@ -44,14 +41,14 @@ func (s *authService) RequestCode(ctx context.Context, email, scene string) erro
 	}
 	// Generate & Store Code
 	code := genCode()
-	if err := s.authRepo.StoreCode(c, code, email, scene); err != nil {
-		if x.IsCtxDone(c, err) {
+	if err := s.authRepo.StoreCode(cctx, code, email, scene); err != nil {
+		if x.IsCtxDone(cctx, err) {
 			return err
 		}
 		x.LogError(ctx, "AuthService.RequestCode.StoreCode", err)
 		return err
 	}
-	// Send
+	// Send Async
 	// TODO: Send via email
 	log.Printf("[DEV] Verification code for %s is: %s", email, code)
 	return nil
