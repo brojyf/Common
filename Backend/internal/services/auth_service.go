@@ -37,11 +37,11 @@ func (s *authService) SignOTP(ctx context.Context, email, scene, jti string) (st
 	return token, nil
 }
 
-func (s *authService) VerifyCode(ctx context.Context, email, scene, code, jti string) error {
+func (s *authService) VerifyCode(ctx context.Context, email, scene, code, codeID string) error {
 	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.VerifyCode)
 	defer cancel()
 
-	pass, err := s.authRepo.MatchAndConsumeOTP(cctx, email, scene, code, jti)
+	pass, err := s.authRepo.MatchAndConsumeOTP(cctx, email, scene, code, codeID)
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
 			return err

@@ -27,8 +27,8 @@ func NewAuthRepo(db *sql.DB, rdb *redis.Client) AuthRepo {
 	return &authRepo{db: db, rdb: rdb}
 }
 
-func (r *authRepo) MatchAndConsumeOTP(ctx context.Context, email, scene, code, jti string) (bool, error) {
-	key := fmt.Sprintf("otp:%s:%s:%s", email, scene, jti)
+func (r *authRepo) MatchAndConsumeOTP(ctx context.Context, email, scene, code, codeID string) (bool, error) {
+	key := fmt.Sprintf("otp:%s:%s:%s", email, scene, codeID)
 	v, err := r.rdb.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
 		return false, nil
