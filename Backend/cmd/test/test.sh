@@ -8,8 +8,8 @@ curl -i -X POST http://localhost:8080/api/auth/request-code \
 printf "\n\033[32m*** /auth/verify-code ***\033[0m\n"
 echo "Enter the code: "
 read code
-echo "Enter the JTI: "
+echo "Enter the code_id: "
 read codeID
 curl -i -X POST http://localhost:8080/api/auth/verify-code \
   -H "Content-Type:application/json" \
-  -d "{\"otp_jti\":\"$codeID\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"
+  -d "{\"otp_id\":\"$codeID\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"
