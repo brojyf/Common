@@ -9,6 +9,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -51,7 +52,7 @@ func (h *authHandler) HandleResetPassword(c *gin.Context) {}
 func (h *authHandler) HandleForgetPassword(c *gin.Context) {}
 
 func (h *authHandler) HandleCreateAccount(c *gin.Context) {
-	// ctx := c.Request.Context()
+	ctx := c.Request.Context()
 	// 401
 	scene := c.GetString("scene")
 	if scene != "signup" {
@@ -65,7 +66,6 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	var req struct {
 		Password string `json:"password"`
 	}
-	email := c.GetString("email")
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
@@ -73,13 +73,38 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		x.BadReq(c)
 		return
 	}
-	// 409 write to db
-	log.Printf(email)
+	if !isValidPassword(req.Password) {
+		if x.ShouldSkipWrite(c, nil) {
+			return
+		}
+		x.BadReq(c)
+		return
+	}
+	// 409 & 500: Store user
+	email := c.GetString("email")
+	uid, err := h.authSvc.CreateAccount(ctx, email, req.Password)
+	if err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Internal(c)
+		return
+	} // 500
+	if uid == 0 {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Conflict(c)
+		return
+	}
+	// 500: Store device id
+	deviceID := uuid.New().String()
+
 	// 201
 	atk := ""
 	rtk := ""
-	uid := 0
-	deviceID := ""
+
+	// 201
 	if x.ShouldSkipWrite(c, nil) {
 		return
 	}
@@ -185,6 +210,26 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"otp_id": codeID,
 	})
+}
+
+func isValidPassword(pwd string) bool {
+	if len(pwd) < 8 || len(pwd) > 20 {
+		return false
+	}
+	var hasLower, hasUpper, hasDigit, hasSpecial bool
+	for _, c := range pwd {
+		switch {
+		case unicode.IsLower(c):
+			hasLower = true
+		case unicode.IsUpper(c):
+			hasUpper = true
+		case unicode.IsDigit(c):
+			hasDigit = true
+		case unicode.IsPunct(c) || unicode.IsSymbol(c):
+			hasSpecial = true
+		}
+	}
+	return hasLower && hasUpper && hasDigit && hasSpecial
 }
 
 func isValidScene(scene string) bool {

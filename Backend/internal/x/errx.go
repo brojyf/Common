@@ -18,3 +18,4 @@ func BadRequest(c *gin.Context, msg string) { Write(c, http.StatusBadRequest, ms
 func TooManyReq(c *gin.Context)             { Write(c, http.StatusTooManyRequests, "too many requests") }
 func Internal(c *gin.Context)               { Write(c, http.StatusInternalServerError, "internal server error") }
 func Unauthorized(c *gin.Context)           { Write(c, http.StatusUnauthorized, "unauthorized") }
+func Conflict(c *gin.Context)               { Write(c, http.StatusConflict, "conflict") }

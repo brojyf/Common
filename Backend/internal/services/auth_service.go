@@ -11,9 +11,13 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
+	StoreDeviceID(ctx context.Context, deviceID string, uid uint64) error
+	CreateAccount(ctx context.Context, email, password string) (uint64, error)
 	SignOTP(ctx context.Context, email, scene, jti string) (string, error)
 	VerifyCode(ctx context.Context, email, scene, code, jti string) error
 	RequestCode(ctx context.Context, email, scene, jti string) error
@@ -26,6 +30,35 @@ type authService struct {
 
 func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
+}
+
+func (s *authService) StoreDeviceID(ctx context.Context, deviceID string, uid uint64) error {
+	return nil
+}
+
+func (s *authService) CreateAccount(ctx context.Context, email, password string) (uint64, error) {
+	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.CreateAccount)
+	defer cancel()
+	// Hash pwd
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		if x.IsCtxDone(cctx, err) {
+			return 0, err
+		}
+		x.LogError(ctx, "AuthService.CreateAccount.Hash", err)
+		return 0, err
+	}
+	// DB
+	uid, err := s.authRepo.StoreNewUser(cctx, email, string(hashedBytes))
+	if err != nil {
+		if x.IsCtxDone(cctx, err) {
+			return 0, err
+		}
+		x.LogError(ctx, "AuthService.CreateAccount.StoreNewUser", err)
+		return 0, err
+	}
+
+	return uid, nil
 }
 
 func (s *authService) SignOTP(ctx context.Context, email, scene, jti string) (string, error) {

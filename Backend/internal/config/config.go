@@ -35,9 +35,10 @@ type MySQL struct {
 }
 
 type Timeouts struct {
-	Request     time.Duration
-	RequestCode time.Duration
-	VerifyCode  time.Duration
+	Request       time.Duration
+	RequestCode   time.Duration
+	VerifyCode    time.Duration
+	CreateAccount time.Duration
 }
 
 type RedisTTL struct {
@@ -76,9 +77,10 @@ func Init() {
 			ConnectionMaxIdleTime: mustGetDur("MYSQL_CONNECTION_MAX_IDLE_TIME"),
 		},
 		Timeouts: Timeouts{
-			Request:     mustGetDur("REQUEST_TIMEOUT"),
-			RequestCode: mustGetDur("REQUEST_CODE"),
-			VerifyCode:  mustGetDur("VERIFY_CODE"),
+			Request:       mustGetDur("REQUEST_TIMEOUT"),
+			RequestCode:   mustGetDur("REQUEST_CODE"),
+			VerifyCode:    mustGetDur("VERIFY_CODE"),
+			CreateAccount: mustGetDur("CREATE_ACCOUNT"),
 		},
 		RedisTTL: RedisTTL{
 			OTP:         mustGetDur("OTP_TTL"),

@@ -8,10 +8,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/redis/go-redis/v9"
 )
 
 type AuthRepo interface {
+	StoreNewUser(ctx context.Context, email, hashPwd string) (uint64, error)
 	MatchAndConsumeOTP(ctx context.Context, email, scene, code, jti string) (bool, error)
 	CheckThrottle(ctx context.Context, email, scene string) (bool, error)
 	StoreCode(ctx context.Context, code, email, scene, jti string) error
@@ -25,6 +27,26 @@ type authRepo struct {
 
 func NewAuthRepo(db *sql.DB, rdb *redis.Client) AuthRepo {
 	return &authRepo{db: db, rdb: rdb}
+}
+
+// StoreNewUser (0, nil) represents conflict
+func (r *authRepo) StoreNewUser(ctx context.Context, email, hashPwd string) (uint64, error) {
+	query := `INSERT INTO users (email, password_hash) VALUES (?, ?)`
+
+	res, err := r.db.ExecContext(ctx, query, email, hashPwd)
+	if err != nil {
+		var me *mysql.MySQLError
+		if errors.As(err, &me) && me.Number == 1062 {
+			return 0, nil
+		}
+		return 0, err
+	} // Check conflict
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	} // Check get uid
+	return uint64(id), nil
 }
 
 func (r *authRepo) MatchAndConsumeOTP(ctx context.Context, email, scene, code, codeID string) (bool, error) {
