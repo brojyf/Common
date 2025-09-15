@@ -30,6 +30,8 @@ struct InputField: View {
                 SecureField(placeholder, text: $text)
             } else {
                 TextField(placeholder, text: $text)
+                    .autocapitalization(.none)
+                    .autocorrectionDisabled(true)  
             }
         }
         .padding()

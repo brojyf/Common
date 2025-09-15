@@ -29,12 +29,14 @@ var (
 	REDIS_QUERY_TIMEOUT time.Duration
 
 	OTP_THROTTLE_TTL time.Duration
+	OTP_TTL          time.Duration
 )
 
 func InitConfig() {
 	_ = godotenv.Load("dev.env")
 
 	OTP_THROTTLE_TTL = mustGetEnvAsDuration("OTP_THROTTLE_TTL")
+	OTP_TTL = mustGetEnvAsDuration("OTP_TTL")
 
 	REQUEST_TIMEOUT = mustGetEnvAsDuration("REQUEST_TIMEOUT")
 	DB_QUERY_TIMEOUT = mustGetEnvAsDuration("DB_QUERY_TIMEOUT")

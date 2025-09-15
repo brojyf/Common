@@ -2,12 +2,15 @@ package services
 
 import (
 	"Backend/internal/repo"
+	"Backend/internal/x"
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log"
+	"math/big"
 )
 
 type AuthService interface {
-	// RequestCode
 	RequestCode(ctx context.Context, email, scene string) error
 	CheckRequestCodeThrottle(ctx context.Context, email, scene string) error
 }
@@ -26,12 +29,23 @@ func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene
 
 func (s *authService) RequestCode(ctx context.Context, email, scene string) error {
 	// Set throttle
-
+	if err := s.authRepo.SetThrottle(ctx, email, scene); err != nil {
+		x.LogError(ctx, "AuthService.RequestCode.SetThrottle", err)
+		return err
+	}
 	// Generate & Store Code
-	code := "000000"
-
-	// Send & Return
+	code := genCode()
+	if err := s.authRepo.StoreCode(ctx, code, email, scene); err != nil {
+		x.LogError(ctx, "AuthService.RequestCode.StoreCode", err)
+		return err
+	}
+	// Send
 	// TODO: Send via email
 	log.Printf("[DEV] Verification code for %s is: %s", email, code)
 	return nil
+}
+
+func genCode() string {
+	n, _ := rand.Int(rand.Reader, big.NewInt(1000000))
+	return fmt.Sprintf("%06d", n.Int64())
 }
