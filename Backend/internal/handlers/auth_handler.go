@@ -79,7 +79,6 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
-		x.Error(c, "authSvc.CheckRequestCodeThrottle", err)
 		x.TooManyReq(c)
 		return
 	}
@@ -88,7 +87,6 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
-		x.Error(c, "authSvc.RequestCode", err)
 		x.Internal(c)
 		return
 	}
