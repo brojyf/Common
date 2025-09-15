@@ -12,7 +12,7 @@ import (
 type JWT struct {
 	OTP time.Duration
 	ATK int
-	RTK int
+	RTK time.Duration
 	KEY []byte
 }
 
@@ -89,7 +89,7 @@ func Init() {
 		JWT: JWT{
 			OTP: mustGetDur("JWT_OTP"),
 			ATK: mustGetInt("JWT_ATK"),
-			RTK: mustGetInt("JWT_RTK"),
+			RTK: mustGetDur("JWT_RTK"),
 			KEY: []byte(mustGet("JWT_KEY")),
 		},
 	}

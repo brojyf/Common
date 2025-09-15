@@ -96,13 +96,25 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		}
 		x.Conflict(c)
 		return
-	}
+	} // 409
 	// 500: Store device id
 	deviceID := uuid.New().String()
-
-	// 201
-	atk := ""
-	rtk := ""
+	if err = h.authSvc.StoreDeviceID(ctx, deviceID, uid); err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Internal(c)
+		return
+	}
+	// 500
+	atk, rtk, err := h.authSvc.SignARTK(ctx, uid, deviceID)
+	if err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Internal(c)
+		return
+	}
 
 	// 201
 	if x.ShouldSkipWrite(c, nil) {
