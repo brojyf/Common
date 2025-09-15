@@ -1,6 +1,7 @@
 package services
 
 import (
+	"Backend/internal/config"
 	"Backend/internal/repo"
 	"Backend/internal/x"
 	"context"
@@ -28,14 +29,19 @@ func (s *authService) CheckRequestCodeThrottle(ctx context.Context, email, scene
 }
 
 func (s *authService) RequestCode(ctx context.Context, email, scene string) error {
+	if x.IsCtxDone(ctx, nil) {
+		return ctx.Err()
+	}
+	c, cancel := context.WithTimeout(ctx, config.C.Timeouts.RequestCode)
+	defer cancel()
 	// Set throttle
-	if err := s.authRepo.SetThrottle(ctx, email, scene); err != nil {
+	if err := s.authRepo.SetThrottle(c, email, scene); err != nil {
 		x.LogError(ctx, "AuthService.RequestCode.SetThrottle", err)
 		return err
 	}
 	// Generate & Store Code
 	code := genCode()
-	if err := s.authRepo.StoreCode(ctx, code, email, scene); err != nil {
+	if err := s.authRepo.StoreCode(c, code, email, scene); err != nil {
 		x.LogError(ctx, "AuthService.RequestCode.StoreCode", err)
 		return err
 	}
