@@ -3,7 +3,6 @@ package handlers
 import (
 	"Backend/internal/services"
 	"Backend/internal/x"
-	"Backend/internal/x/jwt"
 	"log"
 	"net"
 	"net/mail"
@@ -74,8 +73,10 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
-		JTI  string `json:"otp_jti"`
-		Code string `json:"code"`
+		JTI   string `json:"otp_jti"`
+		Code  string `json:"code"`
+		Email string `json:"email"`
+		Scene string `json:"scene"`
 	}
 	// 400
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -86,9 +87,7 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 		return
 	}
 	// 401
-	email := c.GetString("email")
-	scene := c.GetString("scene")
-	if err := h.authSvc.VerifyCode(ctx, email, scene, req.Code, req.JTI); err != nil {
+	if err := h.authSvc.VerifyCode(ctx, req.Email, req.Scene, req.Code, req.JTI); err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
 		}
@@ -97,7 +96,7 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 	}
 	// 500
 	jti := uuid.NewString()
-	token, err := jwt.SignOTP(email, scene, jti)
+	token, err := h.authSvc.SignOTP(ctx, req.Email, req.Scene, jti)
 	if err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return
@@ -160,7 +159,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	}
 	log.Printf("[DEV] JTI: %s", jti)
 	c.JSON(200, gin.H{
-		"otp_jit": jti,
+		"otp_jti": jti,
 	})
 }
 

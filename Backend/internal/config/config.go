@@ -13,7 +13,7 @@ type JWT struct {
 	OTP time.Duration
 	ATK time.Duration
 	RTK time.Duration
-	KEY string
+	KEY []byte
 }
 
 type Redis struct {
@@ -88,7 +88,7 @@ func Init() {
 			OTP: mustGetDur("JWT_OTP"),
 			ATK: mustGetDur("JWT_ATK"),
 			RTK: mustGetDur("JWT_RTK"),
-			KEY: mustGet("JWT_KEY"),
+			KEY: []byte(mustGet("JWT_KEY")),
 		},
 	}
 

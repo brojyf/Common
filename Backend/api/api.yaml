@@ -234,13 +234,17 @@ paths:
           application/json:
             schema:
               type: object
-              required: [code]
+              required: [otp_jti, code, email, scene]
               properties:
-                otp_jto:
+                otp_jti:
                   type: string
                 code:
                   type: string
                   pattern: '^[0-9]{6}$'
+                email:
+                  $ref: '#/components/schemas/Email'
+                scene:
+                  $ref: '#/components/schemas/Scene'
       responses:
         '200':
           description: verification success, return signup token

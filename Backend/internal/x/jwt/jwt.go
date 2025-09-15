@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"Backend/internal/config"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,4 +32,25 @@ func SignOTP(email, scene, jti string) (string, error) {
 	return tok.SignedString(config.C.JWT.KEY)
 }
 
-// func parse()
+func ParseOTP(tokenStr string) (*OTPClaims, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenStr,
+		&OTPClaims{},
+		func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+			return config.C.JWT.KEY, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*OTPClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	return claims, nil
+}

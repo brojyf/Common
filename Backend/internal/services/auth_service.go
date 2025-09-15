@@ -4,6 +4,7 @@ import (
 	"Backend/internal/config"
 	"Backend/internal/repo"
 	"Backend/internal/x"
+	"Backend/internal/x/jwt"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -13,6 +14,7 @@ import (
 )
 
 type AuthService interface {
+	SignOTP(ctx context.Context, email, scene, jti string) (string, error)
 	VerifyCode(ctx context.Context, email, scene, code, jti string) error
 	RequestCode(ctx context.Context, email, scene, jti string) error
 	CheckRequestCodeThrottle(ctx context.Context, email, scene string) error
@@ -24,6 +26,15 @@ type authService struct {
 
 func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
+}
+
+func (s *authService) SignOTP(ctx context.Context, email, scene, jti string) (string, error) {
+	token, err := jwt.SignOTP(email, scene, jti)
+	if err != nil {
+		x.LogError(ctx, "AuthService.SIgnOTP", err)
+		return "", err
+	}
+	return token, nil
 }
 
 func (s *authService) VerifyCode(ctx context.Context, email, scene, code, jti string) error {

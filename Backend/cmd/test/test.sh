@@ -12,4 +12,4 @@ echo "Enter the JTI: "
 read jti
 curl -i -X POST http://localhost:8080/api/auth/verify-code \
   -H "Content-Type:application/json" \
-  -d "{\"otp_jti\":\"$jti\",\"code\":\"$code\"}"
+  -d "{\"otp_jti\":\"$jti\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"
