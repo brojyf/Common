@@ -20,6 +20,7 @@ import (
 )
 
 type AuthService interface {
+	UpdateUsername(ctx context.Context, uid uint64, username string) error
 	SignARTK(ctx context.Context, uid uint64, deviceID string) (string, string, error)
 	StoreDeviceID(ctx context.Context, deviceID string, uid uint64) error
 	CreateAccount(ctx context.Context, email, password string) (uint64, error)
@@ -35,6 +36,21 @@ type authService struct {
 
 func NewAuthService(authRepo repo.AuthRepo) AuthService {
 	return &authService{authRepo: authRepo}
+}
+
+func (s *authService) UpdateUsername(ctx context.Context, uid uint64, username string) error {
+	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.SetUsername)
+	defer cancel()
+
+	if err := s.authRepo.UpdateUsername(cctx, uid, username); err != nil {
+		if x.IsCtxDone(cctx, err) {
+			return err
+		}
+		x.LogError(ctx, "AuthService.UpdateUsername", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *authService) SignARTK(ctx context.Context, uid uint64, deviceID string) (string, string, error) {

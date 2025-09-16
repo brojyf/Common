@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -45,7 +46,56 @@ func (h *authHandler) HandleLogoutAll(c *gin.Context) {}
 
 func (h *authHandler) HandleRefresh(c *gin.Context) {}
 
-func (h *authHandler) HandleSetUsername(c *gin.Context) {}
+func (h *authHandler) HandleSetUsername(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// 1) 鉴权：从中间件拿 uid，必须存在且非 0
+	uid := c.GetUint64("uid")
+	if uid == 0 {
+		if x.ShouldSkipWrite(c, nil) {
+			return
+		}
+		x.Unauthorized(c)
+		return
+	}
+
+	// 2) 解析
+	var req struct {
+		Username string `json:"username"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.BadReq(c) // 400: invalid body
+		return
+	}
+
+	// 3) 规范化 + 校验
+	req.Username = strings.TrimSpace(req.Username)
+	if !isValidUsername(req.Username) {
+		if x.ShouldSkipWrite(c, nil) {
+			return
+		}
+		x.BadReq(c) // 400: invalid username
+		return
+	}
+
+	// 4) 业务
+	err := h.authSvc.UpdateUsername(ctx, uid, req.Username)
+	if err != nil {
+		if x.ShouldSkipWrite(c, err) {
+			return
+		}
+		x.Internal(c) // 500
+		return
+	}
+
+	// 5) OK
+	c.JSON(200, gin.H{
+		"username": req.Username,
+	})
+}
 
 func (h *authHandler) HandleResetPassword(c *gin.Context) {}
 
@@ -303,4 +353,15 @@ func isValidEmail(email string) bool {
 	}
 
 	return true
+}
+
+func isValidUsername(s string) bool {
+	var usernameRe = regexp.MustCompile(`^[A-Za-z0-9 ]+$`)
+	if len(s) == 0 {
+		return false
+	}
+	if utf8.RuneCountInString(s) > 20 {
+		return false
+	}
+	return usernameRe.MatchString(s)
 }

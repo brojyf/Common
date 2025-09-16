@@ -14,6 +14,7 @@ import (
 )
 
 type AuthRepo interface {
+	UpdateUsername(ctx context.Context, uid uint64, username string) error
 	StoreRTK(ctx context.Context, uid uint64, deviceID, rtkHashed []byte) error
 	GetTKVersion(ctx context.Context, uid uint64) (uint, error)
 	StoreDeviceID(ctx context.Context, uid uint64, deviceID []byte) error
@@ -33,20 +34,53 @@ func NewAuthRepo(db *sql.DB, rdb *redis.Client) AuthRepo {
 	return &authRepo{db: db, rdb: rdb}
 }
 
+func (r *authRepo) UpdateUsername(ctx context.Context, uid uint64, username string) error {
+	const q = `
+	UPDATE users
+   	  SET username   = ?,
+       updated_at = CURRENT_TIMESTAMP
+ 	  WHERE id = ?`
+
+	res, err := r.db.ExecContext(ctx, q, username, uid)
+	if err != nil {
+		var me *mysql.MySQLError
+		if errors.As(err, &me) && me.Number == 1062 {
+			return nil
+		}
+		return err
+	}
+
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
 func (r *authRepo) StoreRTK(ctx context.Context, uid uint64, deviceID, rtkHashed []byte) error {
-	// 1) 过期时间
 	expiresAt := time.Now().Add(config.C.JWT.RTK)
 
-	// 2) UPSERT：同一 (user_id, device_id) 只有一条会话；刷新时覆盖哈希与到期时间，清空 revoked_at
+	if len(deviceID) == 0 {
+		deviceID = make([]byte, 16)
+	}
+
 	const q = `
-INSERT INTO sessions (user_id, device_id, rtk_hash, refresh_expires_at, revoked_at)
-VALUES (?, ?, ?, ?, NULL)
+INSERT INTO sessions (user_id, device_id, rtk_hash, token_version, expires_at, revoked_at)
+VALUES (
+  ?, ?, ?, 
+  (SELECT u.token_version FROM users u WHERE u.id = ?), 
+  ?, 
+  NULL
+)
 ON DUPLICATE KEY UPDATE
-  rtk_hash = VALUES(rtk_hash),
-  refresh_expires_at = VALUES(refresh_expires_at),
-  revoked_at = NULL
+  rtk_hash      = VALUES(rtk_hash),
+  token_version = VALUES(token_version),
+  expires_at    = VALUES(expires_at),
+  revoked_at    = NULL,
+  updated_at    = CURRENT_TIMESTAMP
 `
-	_, err := r.db.ExecContext(ctx, q, uid, deviceID, rtkHashed, expiresAt)
+	_, err := r.db.ExecContext(ctx, q, uid, deviceID, rtkHashed, uid, expiresAt)
 	return err
 }
 

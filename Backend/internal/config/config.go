@@ -39,6 +39,7 @@ type Timeouts struct {
 	RequestCode   time.Duration
 	VerifyCode    time.Duration
 	CreateAccount time.Duration
+	SetUsername   time.Duration
 }
 
 type RedisTTL struct {
@@ -81,6 +82,7 @@ func Init() {
 			RequestCode:   mustGetDur("REQUEST_CODE"),
 			VerifyCode:    mustGetDur("VERIFY_CODE"),
 			CreateAccount: mustGetDur("CREATE_ACCOUNT"),
+			SetUsername:   mustGetDur("SET_USERNAME"),
 		},
 		RedisTTL: RedisTTL{
 			OTP:         mustGetDur("OTP_TTL"),

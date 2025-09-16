@@ -38,3 +38,14 @@ curl -s -D /tmp/req_hdr.txt -o /tmp/req_body.json \
 
 cat /tmp/req_hdr.txt
 cat /tmp/req_body.json
+
+ATK=$(jq -er '.access_token' /tmp/req_body.json) || {
+      echo "failed to parse .access_token from body"; exit 1;
+}
+
+# Set Username
+printf "\n\033[32m*** /auth/me/set-username ***\033[0m\n"
+curl -i -X PATCH http://localhost:8080/api/auth/me/set-username \
+  -H "Content-Type:application/json" \
+  -H "Authorization: Bearer $ATK"  \
+  -d '{"username":"patrick jiang"}'
