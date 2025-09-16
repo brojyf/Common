@@ -18,11 +18,20 @@ struct SendCodeView: View {
         VStack {
             InputField("email", text: $email)
             Button("Send Code"){
-                vm.requestCode(email: email, scene:"signup")
-                vm.requestCodeWithRouter(email: email, scene: scene)            }
+                vm.requestCodeWithRouter(email: email, scene: scene)
+            }
         }
         .padding()
         .navigationTitle(Text(scene == .signup ? "Sign up" : "Reset Password"))
+        .alert(isPresented: $vm.hasError){
+            Alert(
+                title: Text("Error"),
+                message: Text(vm.errorMsg ?? "Unknown Error"),
+                dismissButton: .default(Text("OK")){
+                    vm.dismissError()
+                }
+            )
+        }
     }
 }
 

@@ -10,19 +10,19 @@ import Combine
 
 final class AuthService {
     
-    func requestCode(email: String, scene: String) -> AnyPublisher<RequestCodeResponse, NetworkingError>{
+    func requestCode(email: String, scene: String) -> AnyPublisher<OTPID, NetworkingError>{
         let body = RequstCodeBody(email: email, scene: scene)
         return NetworkingManager.post(
             url: API.Auth.requestCode,
             body: body
         )
-        .decode(type: RequestCodeResponse.self, decoder: JSONDecoder())
+        .decode(type: OTPID.self, decoder: JSONDecoder())
         .mapError { ($0 as? NetworkingError) ?? .unknown }
         .eraseToAnyPublisher()
     }
 }
 
-struct RequestCodeResponse: Codable {
+struct OTPID: Codable {
     let otpID: String
     enum CodingKeys: String, CodingKey {
         case otpID = "otp_id"

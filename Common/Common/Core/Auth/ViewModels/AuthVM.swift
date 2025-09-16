@@ -14,6 +14,9 @@ final class AuthVM: ObservableObject {
     // Route Function = Current View
     @Published var path = NavigationPath()
     
+    @Published var hasError: Bool = false
+    @Published var errorMsg: String? = nil
+    
     private let session: SessionStore
     private let svc: AuthService
     private var cancellables = Set<AnyCancellable>()
@@ -24,18 +27,6 @@ final class AuthVM: ObservableObject {
     }
     
     // MARK: - Service Methods
-    func requestCode(email: String, scene: String){
-        svc.requestCode(email: email, scene: scene)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                NetworkingManager.handleCompletion(completion) { err in
-                    print("error: \(err)")
-                }
-            }, receiveValue: { resp in
-                print("\(resp.otpID)")
-            })
-            .store(in: &cancellables)
-    }
     
     // MARK: - Router Methods
     func login(email: String, password: String){
@@ -61,7 +52,18 @@ final class AuthVM: ObservableObject {
     }
     
     func requestCodeWithRouter(email: String, scene: AuthScene){
-        path.append(AuthRoute.verify(email: email, scene: scene))
+        let sceneStr = scene.toString
+        svc.requestCode(email: email, scene: sceneStr)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                guard let self else { return }
+                NetworkingManager.handleCompletion(completion, &self.hasError, &self.errorMsg)
+            }, receiveValue: { [weak self] resp in
+                guard let self else { return }
+                self.path.append(AuthRoute.verify(email: email, scene: scene))
+                print("\(resp.otpID)")
+            })
+            .store(in: &cancellables)
     }
     
     func forgetPasswordWithRouter(){
@@ -73,6 +75,11 @@ final class AuthVM: ObservableObject {
     }
     
     func resetFlow() { path = .init() }
+    
+    func dismissError(){
+        hasError = false
+        errorMsg = nil
+    }
 }
 
 // Mark: -- AuthRoute and AuthScene
@@ -85,4 +92,12 @@ enum AuthRoute: Hashable {
 
 enum AuthScene: Hashable {
     case signup, resetPassword
+    var toString: String {
+        switch self {
+        case .signup:
+            return "signup"
+        case .resetPassword:
+            return "reset_password"
+        }
+    }
 }

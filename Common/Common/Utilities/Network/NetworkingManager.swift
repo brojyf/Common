@@ -81,7 +81,7 @@ final class NetworkingManager {
             .eraseToAnyPublisher()
     }
     
-    /// Output -> Data
+    /// Output -> Data / Log Error
     static func handleURLResponse(
             output: URLSession.DataTaskPublisher.Output,
             url: URL,
@@ -104,43 +104,17 @@ final class NetworkingManager {
                 logHTTPError(url: url, status: http.statusCode, headers: http.allHeaderFields, data: output.data, tag: "HTTP")
                 throw NetworkingError.http(status: http.statusCode, url: url, headers: http.allHeaderFields, raw: output.data)
             }
-        }
+    }
     
-    static func handleCompletion(
-            _ completion: Subscribers.Completion<NetworkingError>,
-            onError: (NetworkingError) -> Void = { _ in }
-        ) {
-            guard case .failure(let err) = completion else { return }
-
-            switch err {
-            case .api(let body, let status, let url, let headers, let raw):
-                print("""
-                ❌ [Completion][API]
-                Status : \(status)
-                URL    : \(url)
-                Headers: \(headers)
-                Code   : \(body.code)
-                Error  : \(body.error)
-                Body   : \(String(data: raw.prefix(8*1024), encoding: .utf8) ?? "(non-utf8 \(raw.count)B)")}
-                """)
-            case .http(let status, let url, let headers, let raw):
-                print("""
-                ❌ [Completion][HTTP]
-                Status : \(status)
-                URL    : \(url)
-                Headers: \(headers)
-                Body   : \(String(data: raw.prefix(8*1024), encoding: .utf8) ?? "(non-utf8 \(raw.count)B)")}
-                """)
-            case .transport(let e):
-                print("❌ [Completion][Transport] \(e)")
-            case .encoding(let e):
-                print("❌ [Completion][Encoding] \(e)")
-            case .unknown:
-                print("❌ [Completion][Unknown]")
-            }
-
-            onError(err)
+    static func handleCompletion(_ completion: Subscribers.Completion<NetworkingError>, _ err: inout Bool,_ errMsg: inout String?) {
+        switch completion {
+        case .finished:
+            break
+        case .failure(let error):
+            err = true
+            errMsg = error.userMessage
         }
+    }
     
     // MARK:- Helper Methods
     private static func logHTTPError(
@@ -186,21 +160,45 @@ enum NetworkingError: LocalizedError {
     case transport(URLError)
     case unknown
 
-    var errorDescription: String? {
+    var userMessage: String {
+        switch self {
+        case .api(let body, _, _, _, _):
+            return body.error
+        case .http(let status, _, _, _):
+            if status == 401 {
+                return "Unauthorized. Please log in again."
+            } else if (500...599).contains(status) {
+                return "The server is currently unavailable. Please try again later."
+            } else {
+                return "Request failed (HTTP \(status))."
+            }
+        case .transport:
+            return "Cannot connect to server"
+        case .encoding:
+            return "Failed to process request. Please try again."
+        case .unknown:
+            return "An unknown error occurred. Please try again later."
+        }
+    }
+
+    var debugMessage: String {
         switch self {
         case .api(let body, let status, let url, _, _):
             return "[🔥API] Status: \(status)\nURL: \(url)\nCode: \(body.code)\nError: \(body.error)"
         case .http(let status, let url, _, let raw):
-            let preview = String(data: raw.prefix(8*1024), encoding: .utf8) ?? "(non-utf8 \(raw.count)B)"
+            let preview = String(data: raw.prefix(8*1024), encoding: .utf8)
+                ?? "(non-utf8 \(raw.count)B)"
             return "[🔥HTTP] Status: \(status)\nURL: \(url)\nBody(<=8KB):\n\(preview)"
         case .transport(let e):
             return "[📶] Transport: \(e)"
-        case .unknown:
-            return "[⚠️] Unknown Error"
         case .encoding(let error):
             return "[Encoding] Failed to encode data: \(error)"
+        case .unknown:
+            return "[⚠️] Unknown Error"
         }
     }
+
+    var errorDescription: String? { debugMessage }
 }
 
 private extension Publisher where Failure == NetworkingError {
