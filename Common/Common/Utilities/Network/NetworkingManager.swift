@@ -111,6 +111,7 @@ final class NetworkingManager {
         case .finished:
             break
         case .failure(let error):
+            print("Error: \(error.localizedDescription)")
             err = true
             errMsg = error.userMessage
         }
