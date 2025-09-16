@@ -18,8 +18,8 @@ struct SendCodeView: View {
         VStack {
             InputField("email", text: $email)
             Button("Send Code"){
-                vm.requestCodeWithRouter(email: email, scene: scene)
-            }
+                vm.requestCode(email: email, scene:"signup")
+                vm.requestCodeWithRouter(email: email, scene: scene)            }
         }
         .padding()
         .navigationTitle(Text(scene == .signup ? "Sign up" : "Reset Password"))

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 final class AuthVM: ObservableObject {
 
@@ -14,9 +15,26 @@ final class AuthVM: ObservableObject {
     @Published var path = NavigationPath()
     
     private let session: SessionStore
+    private let svc: AuthService
+    private var cancellables = Set<AnyCancellable>()
     
     init(session: SessionStore) {
         self.session = session
+        self.svc = AuthService()
+    }
+    
+    // MARK: - Service Methods
+    func requestCode(email: String, scene: String){
+        svc.requestCode(email: email, scene: scene)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                NetworkingManager.handleCompletion(completion) { err in
+                    print("error: \(err)")
+                }
+            }, receiveValue: { resp in
+                print("\(resp.otpID)")
+            })
+            .store(in: &cancellables)
     }
     
     // MARK: - Router Methods
