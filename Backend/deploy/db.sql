@@ -12,7 +12,7 @@ CREATE TABLE users (
                        id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                        email           VARCHAR(255)  NOT NULL,
                        password_hash   VARCHAR(255)  NOT NULL,
-                       username        VARCHAR(32)   NULL,
+                       username        VARCHAR(50)   NULL,
                        profile_photo   VARCHAR(1024) NULL,
 
                        token_version   INT UNSIGNED NOT NULL DEFAULT 1,
