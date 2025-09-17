@@ -1,0 +1,53 @@
+// users, user_devices, sessions
+
+Table users {
+  // Basics
+  id             bigint        [pk, increment]
+  email          varchar(255)  [not null, unique]
+  password_hash  varchar(255)  [not null]
+  username       varchar(50)   [not null, default: "J"]
+  profile_photo  varchar(1024) [not null, default: "temp/"]
+  // Record
+  token_version int        [not null, default: 1]
+  is_deleted    tinyint(1) [not null, default: 1]
+  // Auto
+  created_at     timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at     timestamp [not null, default: `CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`]
+}
+
+Table user_devices {
+  // Basics
+  device_id     binary(16) [pk]
+  user_id       bigint [not null]
+  // Record
+  push_token    varchar(512)
+  last_seen_at  timestamp    [null]
+  revoked_at   timestamp    [null]
+  // Auto
+  created_at    timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: "Up to 5 per user_id"
+}
+Ref: user_devices.user_id > users.id [delete: cascade]
+
+Table sessions {
+  // Basics
+  session_id     bigint [pk, increment]
+  user_id        bigint [not null]
+  device_id      binary(16) [not null]
+  rtk_hash       varbinary(32) [not null]
+  token_version  int [not null, default: 1]
+  expires_at     timestamp [not null]
+  revoked_at     timestamp [null]
+  // Auto
+  created_at     timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at     timestamp [not null, default: `CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`]
+  // Index
+  indexes {
+    (user_id, device_id) [unique]
+    user_id
+    device_id
+  }
+}
+Ref: sessions.user_id > users.id [delete: cascade]
+Ref: sessions.device_id > user_devices.device_id [delete: cascade]
