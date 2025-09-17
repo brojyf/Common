@@ -161,8 +161,8 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		return
 	}
 
-	// 500: Sign ARTK
-	atk, rtk, err := h.authSvc.SignARTK(ctx, uid, deviceID)
+	// 500: Sign ATK and RTK & Store session
+	atk, rtk, err := h.authSvc.SignARTKAndStoreSession(ctx, uid, deviceID)
 	if err != nil {
 		if x.ShouldSkipWrite(c, err) {
 			return

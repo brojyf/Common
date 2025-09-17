@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -21,7 +22,7 @@ import (
 
 type AuthService interface {
 	UpdateUsername(ctx context.Context, uid uint64, username string) error
-	SignARTK(ctx context.Context, uid uint64, deviceID string) (string, string, error)
+	SignARTKAndStoreSession(ctx context.Context, uid uint64, deviceID string) (string, string, error)
 	StoreDeviceID(ctx context.Context, deviceID string, uid uint64) error
 	CreateAccount(ctx context.Context, email, password string) (uint64, error)
 	SignOTP(ctx context.Context, email, scene, jti string) (string, error)
@@ -53,11 +54,11 @@ func (s *authService) UpdateUsername(ctx context.Context, uid uint64, username s
 	return nil
 }
 
-func (s *authService) SignARTK(ctx context.Context, uid uint64, deviceID string) (string, string, error) {
+func (s *authService) SignARTKAndStoreSession(ctx context.Context, uid uint64, deviceID string) (string, string, error) {
 	// Sub context
 	cctx, cancel := x.ChildWithBudget(ctx, config.C.Timeouts.CreateAccount)
 	defer cancel()
-	// Get token version
+
 	tkVersion, err := s.authRepo.GetTKVersion(cctx, uid)
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
@@ -66,7 +67,7 @@ func (s *authService) SignARTK(ctx context.Context, uid uint64, deviceID string)
 		x.LogError(ctx, "AuthService.SignARTK.GetTKVersion", err)
 		return "", "", err
 	}
-	// Sign ATK
+
 	did, err := toUUIDBytes16(deviceID)
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
@@ -75,6 +76,7 @@ func (s *authService) SignARTK(ctx context.Context, uid uint64, deviceID string)
 		x.LogError(ctx, "AuthService.SignARTK.ToUUIDBytes16", err)
 		return "", "", err
 	}
+
 	atk, err := jwt.SignATK(uid, deviceID, tkVersion)
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
@@ -83,7 +85,7 @@ func (s *authService) SignARTK(ctx context.Context, uid uint64, deviceID string)
 		x.LogError(ctx, "AuthService.SignARTK.SignATK", err)
 		return "", "", err
 	}
-	// Sign RTK & Store
+
 	rtk, rtkHashed, err := GenerateRTK32()
 	if err != nil {
 		if x.IsCtxDone(cctx, err) {
@@ -92,7 +94,9 @@ func (s *authService) SignARTK(ctx context.Context, uid uint64, deviceID string)
 		x.LogError(ctx, "AuthService.SignARTK.GenerateRTK32", err)
 		return "", "", err
 	}
-	if err := s.authRepo.StoreRTK(cctx, uid, did, rtkHashed); err != nil {
+
+	expiresAt := time.Now().Add(config.C.JWT.RTK)
+	if err := s.authRepo.StoreSession(cctx, uid, did, rtkHashed, tkVersion, expiresAt); err != nil {
 		if x.IsCtxDone(cctx, err) {
 			return "", "", err
 		}

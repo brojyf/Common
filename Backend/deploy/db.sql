@@ -14,7 +14,7 @@ CREATE TABLE users (
     email           VARCHAR(255)  NOT NULL,
     password_hash   VARCHAR(255)  NOT NULL,
     username        VARCHAR(50)   NOT NULL DEFAULT "J",
-    profile_photo   VARCHAR(1024) NULL,
+    profile_photo   VARCHAR(1024) NOT NULL DEFAULT "http://localhost:8080/pfp",
     -- Record
     token_version   INT UNSIGNED NOT NULL DEFAULT 1,
     is_deleted      TINYINT(1) NOT NULL DEFAULT 0,
@@ -31,12 +31,13 @@ CREATE TABLE user_devices (
     device_id    BINARY(16) PRIMARY KEY,
     user_id      BIGINT UNSIGNED NOT NULL,
     -- Record
-    push_token   VARCHAR(255) NULL,
+    push_token   VARCHAR(512) NULL,
     last_seen_at TIMESTAMP NULL,
     revoked_at   TIMESTAMP NULL,
     -- Auto
     created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     -- Constraints
+    UNIQUE KEY uk_user_device (user_id, device_id),
     CONSTRAINT fk_ud_user FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -58,9 +59,9 @@ CREATE TABLE sessions (
     updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     -- Constraints
     PRIMARY KEY (session_id),
-    UNIQUE KEY uk_sessions_user_device (user_id, device_id),   
-    CONSTRAINT fk_sess_user   FOREIGN KEY (user_id)   REFERENCES users(id) 
-        ON DELETE CASCADE,
-    CONSTRAINT fk_sess_device FOREIGN KEY (device_id) REFERENCES user_devices(device_id) 
-        ON DELETE CASCADE
+    UNIQUE KEY uk_sessions_user_device (user_id, device_id),
+    CONSTRAINT fk_sess_user_device FOREIGN KEY (user_id, device_id)
+        REFERENCES user_devices (user_id, device_id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
 ) ENGINE=InnoDB;

@@ -15,14 +15,13 @@ import (
 
 type AuthRepo interface {
 	UpdateUsername(ctx context.Context, uid uint64, username string) error
-	StoreRTK(ctx context.Context, uid uint64, deviceID, rtkHashed []byte) error
+	StoreSession(ctx context.Context, uid uint64, deviceID, rtkHashed []byte, tkv uint, exp time.Time) error
 	GetTKVersion(ctx context.Context, uid uint64) (uint, error)
 	StoreDeviceID(ctx context.Context, uid uint64, deviceID []byte) error
 	StoreNewUser(ctx context.Context, email, hashPwd string) (uint64, error)
-	
+	// Redis Methods
 	MatchAndConsumeOTP(ctx context.Context, email, scene, code, jti string) (bool, error)
 	StoreCode(ctx context.Context, code, email, scene, jti string) error
-
 	CheckThrottle(ctx context.Context, email, scene string) (bool, error)
 	SetThrottle(ctx context.Context, email, scene string) error
 }
@@ -60,21 +59,14 @@ func (r *authRepo) UpdateUsername(ctx context.Context, uid uint64, username stri
 	return nil
 }
 
-func (r *authRepo) StoreRTK(ctx context.Context, uid uint64, deviceID, rtkHashed []byte) error {
-	expiresAt := time.Now().Add(config.C.JWT.RTK)
-
-	if len(deviceID) == 0 {
-		deviceID = make([]byte, 16)
+func (r *authRepo) StoreSession(ctx context.Context, uid uint64, deviceID, rtkHashed []byte, tkv uint, exp time.Time) error {
+	if len(deviceID) != 16 {
+		return fmt.Errorf("invalid device id")
 	}
 
 	const q = `
 INSERT INTO sessions (user_id, device_id, rtk_hash, token_version, expires_at, revoked_at)
-VALUES (
-  ?, ?, ?, 
-  (SELECT u.token_version FROM users u WHERE u.id = ?), 
-  ?, 
-  NULL
-)
+VALUES (?, ?, ?, ?, ?, NULL)
 ON DUPLICATE KEY UPDATE
   rtk_hash      = VALUES(rtk_hash),
   token_version = VALUES(token_version),
@@ -82,7 +74,7 @@ ON DUPLICATE KEY UPDATE
   revoked_at    = NULL,
   updated_at    = CURRENT_TIMESTAMP
 `
-	_, err := r.db.ExecContext(ctx, q, uid, deviceID, rtkHashed, uid, expiresAt)
+	_, err := r.db.ExecContext(ctx, q, uid, deviceID, rtkHashed, tkv, exp)
 	return err
 }
 
