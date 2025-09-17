@@ -19,9 +19,11 @@ type AuthRepo interface {
 	GetTKVersion(ctx context.Context, uid uint64) (uint, error)
 	StoreDeviceID(ctx context.Context, uid uint64, deviceID []byte) error
 	StoreNewUser(ctx context.Context, email, hashPwd string) (uint64, error)
+	
 	MatchAndConsumeOTP(ctx context.Context, email, scene, code, jti string) (bool, error)
-	CheckThrottle(ctx context.Context, email, scene string) (bool, error)
 	StoreCode(ctx context.Context, code, email, scene, jti string) error
+
+	CheckThrottle(ctx context.Context, email, scene string) (bool, error)
 	SetThrottle(ctx context.Context, email, scene string) error
 }
 
