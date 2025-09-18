@@ -1,9 +1,9 @@
 package repos
 
 import (
-	"Backend/internal/config"
-	"Backend/internal/pkg/ctx_util"
-	"Backend/internal/repos/scripts"
+	"backend/internal/config"
+	"backend/internal/pkg/ctx_util"
+	"backend/internal/repos/scripts"
 	"context"
 	"database/sql"
 	"fmt"

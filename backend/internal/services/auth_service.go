@@ -1,10 +1,10 @@
 package services
 
 import (
-	"Backend/internal/config"
-	"Backend/internal/pkg/ctx_util"
-	"Backend/internal/pkg/logx"
-	"Backend/internal/repos"
+	"backend/internal/config"
+	"backend/internal/pkg/ctx_util"
+	"backend/internal/pkg/logx"
+	"backend/internal/repos"
 	"context"
 	"crypto/rand"
 	"fmt"

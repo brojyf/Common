@@ -1,11 +1,11 @@
 package router
 
 import (
-	"Backend/internal/config"
-	"Backend/internal/handlers"
-	"Backend/internal/middlewares"
-	"Backend/internal/repos"
-	"Backend/internal/services"
+	"backend/internal/config"
+	"backend/internal/handlers"
+	"backend/internal/middlewares"
+	"backend/internal/repos"
+	"backend/internal/services"
 	"database/sql"
 
 	"github.com/gin-gonic/gin"

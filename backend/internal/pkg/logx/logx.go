@@ -1,7 +1,7 @@
 package logx
 
 import (
-	"Backend/internal/pkg/request_id"
+	"backend/internal/pkg/request_id"
 	"context"
 	"log"
 )

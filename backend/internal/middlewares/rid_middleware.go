@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"Backend/internal/pkg/request_id"
+	"backend/internal/pkg/request_id"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

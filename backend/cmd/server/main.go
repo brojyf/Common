@@ -1,9 +1,9 @@
 package main
 
 import (
-	"Backend/internal/bootstrap"
-	"Backend/internal/config"
-	"Backend/internal/router"
+	"backend/internal/bootstrap"
+	"backend/internal/config"
+	"backend/internal/router"
 	"log"
 )
 

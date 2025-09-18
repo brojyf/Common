@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"Backend/internal/pkg/httpx"
-	"Backend/internal/services"
+	"backend/internal/pkg/httpx"
+	"backend/internal/services"
 	"errors"
 
 	"github.com/gin-gonic/gin"
