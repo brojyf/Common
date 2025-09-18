@@ -36,7 +36,7 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 	// 1. Check email & scene
 	email = strings.ToLower(strings.TrimSpace(email))
 	scene = strings.TrimSpace(scene)
-	if !isValidEmail(email) || !isValidScene(scene) {
+	if !isValidEmail(email) || !isValidScene(scene) || len(code) != 6 || !isUUID(codeID) {
 		return "", ErrBadRequest
 	}
 
@@ -48,7 +48,7 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 			return "", ErrCtxError
 		}
 		switch {
-		case errors.Is(err, repos.ErrOTPInvalid):
+		case errors.Is(err, repos.ErrOTPInvalid) || errors.Is(err, repos.ErrOTPExpired):
 			return "", ErrUnauthorized
 		case errors.Is(err, repos.ErrRateLimited):
 			return "", ErrTooManyRequest
@@ -185,6 +185,13 @@ func isValidUsername(s string) bool {
 		return false
 	}
 	return usernameRe.MatchString(s)
+}
+func isUUID(s string) bool {
+	u, err := uuid.Parse(s)
+	if err != nil {
+		return false
+	}
+	return u.Version() == 4 && u.Variant() == uuid.RFC4122
 }
 
 type authService struct {

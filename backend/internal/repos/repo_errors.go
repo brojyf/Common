@@ -3,9 +3,14 @@ package repos
 import "errors"
 
 var (
-	ErrRateLimited      = errors.New("throttle")
-	ErrOTPInvalid       = errors.New("invalid one time password")
-	ErrRunScript        = errors.New("run script error")
-	ErrUnexpectedReply  = errors.New("unexpected response")
-	ErrRepoUnauthorized = errors.New("repo unauthorized")
+	// 429
+	ErrRateLimited = errors.New("throttle")
+
+	//401
+	ErrOTPInvalid = errors.New("invalid one-time password")
+	ErrOTPExpired = errors.New("expired one-time password")
+
+	// 500
+	ErrRunScript       = errors.New("run script error")
+	ErrUnexpectedReply = errors.New("unexpected response")
 )

@@ -43,13 +43,13 @@ func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene
 	case "OK":
 		return nil
 	case "INVALID":
-		return ErrRepoUnauthorized
+		return ErrOTPInvalid
 	case "EXPIRED":
-		return ErrRepoUnauthorized
+		return ErrOTPExpired
 	case "THROTTLED":
 		return ErrRateLimited
 	default:
-		return ErrRepoUnauthorized
+		return ErrUnexpectedReply
 	}
 }
 
