@@ -50,7 +50,5 @@ func SetupRouter(d Deps) *gin.Engine {
 }
 
 func checkHealth(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+	c.String(200, "pong")
 }
