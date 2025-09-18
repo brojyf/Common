@@ -24,6 +24,10 @@ func WriteBadReq(c *gin.Context) {
 	WriteJSON(c, http.StatusBadRequest, gin.H{"error": "bad request"})
 }
 
+func WriteUnauthorized(c *gin.Context) {
+	WriteJSON(c, http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+}
+
 func WriteTooManyReq(c *gin.Context) {
 	WriteJSON(c, http.StatusTooManyRequests, gin.H{"error": "too many request"})
 }

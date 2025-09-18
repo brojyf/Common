@@ -6,5 +6,5 @@ DerivedData/
 
 ### Mac OS ###
 .DS_Store
-
+tmp/
 

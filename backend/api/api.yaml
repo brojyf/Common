@@ -124,6 +124,8 @@ paths:
           description: invalid request body
         '401':
           description: invalid code or expired
+        '429':
+          description: too many request
 
   /auth/request-code:
     post:

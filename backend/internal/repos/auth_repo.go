@@ -6,15 +6,21 @@ import (
 	"backend/internal/repos/scripts"
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type AuthRepo interface {
+	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code string) error
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
 }
 
+// ThrottleMatchAndConsumeCode Check verify throttle -> Match code -> Consume code
+func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code string) error {
+	return nil
+}
+
+// StoreOTPAndThrottle Check throttle -> Set throttle -> Store code
 func (r *authRepo) StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error) {
 
 	// 1. Define keys & args
@@ -28,15 +34,15 @@ func (r *authRepo) StoreOTPAndThrottle(ctx context.Context, email, scene, codeID
 	res, err := r.scripts.StoreOTPAndThrottle.Run(ctx, r.rdb, keys, args...).Result()
 	if err != nil {
 		if ctx_util.IsCtxDone(ctx, err) {
-			return false, err
+			return false, ctx.Err()
 		}
-		return false, fmt.Errorf("StoreOTPAndThrottle lua error: %w", err)
+		return false, ErrRunScript
 	}
 
 	// 3. Check reply
 	arr, ok := res.([]interface{})
 	if !ok || len(arr) != 1 {
-		return false, fmt.Errorf("unexpected lua reply: %v", res)
+		return false, ErrUnexpectedReply
 	}
 
 	// 4. Check throttle

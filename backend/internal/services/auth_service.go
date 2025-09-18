@@ -3,10 +3,12 @@ package services
 import (
 	"backend/internal/config"
 	"backend/internal/pkg/ctx_util"
+	"backend/internal/pkg/jwt"
 	"backend/internal/pkg/logx"
 	"backend/internal/repos"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -21,7 +23,48 @@ import (
 )
 
 type AuthService interface {
+	VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error)
 	RequestCode(ctx context.Context, email, scene string) (string, error)
+}
+
+func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error) {
+
+	// 0. Create sub context
+	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.VerifyCode)
+	defer cancel()
+
+	// 1. Check email & scene
+	email = strings.ToLower(strings.TrimSpace(email))
+	scene = strings.TrimSpace(scene)
+	if !isValidEmail(email) || !isValidScene(scene) {
+		return "", ErrBadRequest
+	}
+
+	// 2. Call repo: Check throttle -> Match code -> Consume code
+	if err := s.repo.ThrottleMatchAndConsumeCode(cctx, email, scene, codeID, code); err != nil {
+		if ctx_util.IsCtxDone(cctx, err) {
+			return "", ErrCtxError
+		}
+		switch {
+		case errors.Is(err, repos.ErrOTPInvalid):
+			return "", ErrUnauthorized
+		case errors.Is(err, repos.ErrRateLimited):
+			return "", ErrTooManyRequest
+		default:
+			logx.LogError(ctx, "AuthSvc.VerifyCodeAndGenToken.ThrottleMatchAndConsumeCode", err)
+			return "", ErrInternalServer
+		}
+	}
+
+	// 3. Sign token
+	ttl := config.C.JWT.OTT
+	token, err := jwt.SignOTT(email, scene, ttl)
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.VerifyCodeAndGenToken.SignOTT", err)
+		return "", ErrInternalServer
+	}
+
+	return token, nil
 }
 
 func (s *authService) RequestCode(ctx context.Context, email, scene string) (string, error) {
@@ -32,6 +75,7 @@ func (s *authService) RequestCode(ctx context.Context, email, scene string) (str
 
 	// 1. Check email & scene
 	email = strings.ToLower(strings.TrimSpace(email))
+	scene = strings.TrimSpace(scene)
 	if !isValidEmail(email) || !isValidScene(scene) {
 		return "", ErrBadRequest
 	}
@@ -44,7 +88,7 @@ func (s *authService) RequestCode(ctx context.Context, email, scene string) (str
 	}
 	codeID := uuid.NewString()
 
-	// 3. Check repo
+	// 3. Call repo: Check throttle -> Set throttle -> Store code
 	otpTTL := config.C.RedisTTL.OTP
 	throttleTTL := config.C.RedisTTL.OTPThrottle
 	throttled, err := s.repo.StoreOTPAndThrottle(cctx, email, scene, codeID, code, otpTTL, throttleTTL)
@@ -72,7 +116,6 @@ func generateCode() (string, error) {
 
 	return fmt.Sprintf("%06d", n.Int64()), nil
 }
-
 func isValidPassword(pwd string) bool {
 	if len(pwd) < 8 || len(pwd) > 20 {
 		return false
@@ -92,11 +135,6 @@ func isValidPassword(pwd string) bool {
 	}
 	return hasLower && hasUpper && hasDigit && hasSpecial
 }
-
-func isValidScene(scene string) bool {
-	return scene == "signup" || scene == "reset_password"
-}
-
 func isValidEmail(email string) bool {
 	var (
 		localPartRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+$`)
@@ -133,7 +171,9 @@ func isValidEmail(email string) bool {
 
 	return true
 }
-
+func isValidScene(scene string) bool {
+	return scene == "signup" || scene == "reset_password"
+}
 func isValidUsername(s string) bool {
 	var usernameRe = regexp.MustCompile(`^[A-Za-z0-9 ]+$`)
 	if len(s) == 0 {

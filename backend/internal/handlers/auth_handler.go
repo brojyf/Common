@@ -30,12 +30,27 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 	}
 
 	// 2. Call service
-	token := ""
+	token, err := h.svc.VerifyCodeAndGenToken(ctx, req.Email, req.Scene, req.CodeID, req.Code)
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrBadRequest):
+			httpx.WriteBadReq(c)
+		case errors.Is(err, services.ErrUnauthorized):
+			httpx.WriteUnauthorized(c)
+		case errors.Is(err, services.ErrTooManyRequest):
+			httpx.WriteTooManyReq(c)
+		case errors.Is(err, services.ErrCtxError):
+			httpx.WriteCtxError(c, err)
+		default:
+			httpx.WriteInternal(c)
+		}
+		return
+	}
+
 	// 3. Write JSON
 	httpx.TryWriteJSON(c, ctx, 200, gin.H{
 		"token": token,
 	})
-
 }
 
 func (h *authHandler) HandleRequestCode(c *gin.Context) {
