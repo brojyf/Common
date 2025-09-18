@@ -19,8 +19,38 @@ type AuthRepo interface {
 func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code string, limit, window int) error {
 
 	// 1. Define keys & args
+	keys := []string{
+		config.RedisKeyVerifyThrottle(email, scene),
+		config.RedisKeyOTP(email, scene, codeID),
+	}
+	args := []interface{}{limit, window, code}
 
-	return nil
+	// 2. Query
+	res, err := r.scripts.ThrottleMatchAndConsumeCode.Run(ctx, r.rdb, keys, args...).Result()
+	if err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return ctx.Err()
+		}
+		return ErrRunScript
+	}
+
+	// 3, Check reply
+	status, ok := res.(string)
+	if !ok {
+		return ErrUnexpectedReply
+	}
+	switch status {
+	case "OK":
+		return nil
+	case "INVALID":
+		return ErrRepoUnauthorized
+	case "EXPIRED":
+		return ErrRepoUnauthorized
+	case "THROTTLED":
+		return ErrRateLimited
+	default:
+		return ErrRepoUnauthorized
+	}
 }
 
 // StoreOTPAndThrottle Check throttle -> Set throttle -> Store code
@@ -43,13 +73,12 @@ func (r *authRepo) StoreOTPAndThrottle(ctx context.Context, email, scene, codeID
 	}
 
 	// 3. Check reply
-	arr, ok := res.([]interface{})
-	if !ok || len(arr) != 1 {
+	status, ok := res.(string)
+	if !ok {
 		return false, ErrUnexpectedReply
 	}
 
 	// 4. Check throttle
-	status, _ := arr[0].(string)
 	if status == "THROTTLED" {
 		return true, nil
 	}
