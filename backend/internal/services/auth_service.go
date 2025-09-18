@@ -41,7 +41,9 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 	}
 
 	// 2. Call repo: Check throttle -> Match code -> Consume code
-	if err := s.repo.ThrottleMatchAndConsumeCode(cctx, email, scene, codeID, code); err != nil {
+	verifyLimit := config.C.RedisTTL.VerifyWindowLimit
+	window := config.C.RedisTTL.VerifyWindow
+	if err := s.repo.ThrottleMatchAndConsumeCode(cctx, email, scene, codeID, code, verifyLimit, window); err != nil {
 		if ctx_util.IsCtxDone(cctx, err) {
 			return "", ErrCtxError
 		}
