@@ -4,13 +4,38 @@ import (
 	"Backend/internal/pkg/httpx"
 	"Backend/internal/services"
 	"errors"
-	"log"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler interface {
 	HandleRequestCode(*gin.Context)
+}
+
+func (h *authHandler) HandleVerifyCode(c *gin.Context) {
+
+	// 0. Get context
+	ctx := c.Request.Context()
+
+	// 1. Bind JSON
+	var req struct {
+		Email  string `json:"email" binding:"required,email,max=255"`
+		Scene  string `json:"scene" binding:"required,oneof=signup reset_password"`
+		Code   string `json:"code" binding:"required,len=6"`
+		CodeID string `json:"code_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.WriteBadReq(c)
+		return
+	}
+
+	// 2. Call service
+	token := ""
+	// 3. Write JSON
+	httpx.TryWriteJSON(c, ctx, 200, gin.H{
+		"token": token,
+	})
+
 }
 
 func (h *authHandler) HandleRequestCode(c *gin.Context) {
@@ -21,10 +46,9 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	// 1. Bind JSON
 	var req struct {
 		Email string `json:"email" binding:"required,email,max=255"`
-		Scene string `json:"scene" binding:"required,oneof= signup reset_password"`
+		Scene string `json:"scene" binding:"required,oneof=signup reset_password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("invalid request body: %v", err)
 		httpx.WriteBadReq(c)
 		return
 	}
