@@ -9,6 +9,74 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type Timeouts struct {
+	Request       time.Duration
+	RequestCode   time.Duration
+	VerifyCode    time.Duration
+	CreateAccount time.Duration
+	SetUsername   time.Duration
+}
+
+type RedisTTL struct {
+	OTP               int
+	OTPThrottle       int
+	VerifyWindow      int
+	VerifyWindowLimit int
+}
+
+type Config struct {
+	Redis    Redis
+	MySQL    MySQL
+	Timeouts Timeouts
+	RedisTTL RedisTTL
+	JWT      JWT
+}
+
+var C Config
+
+func Init() {
+	_ = godotenv.Load("dev.env")
+
+	C = Config{
+		Timeouts: Timeouts{
+			Request:       mustGetDur("REQUEST_TIMEOUT"),
+			RequestCode:   mustGetDur("REQUEST_CODE"),
+			VerifyCode:    mustGetDur("VERIFY_CODE"),
+			CreateAccount: mustGetDur("CREATE_ACCOUNT"),
+			SetUsername:   mustGetDur("SET_USERNAME"),
+		},
+		RedisTTL: RedisTTL{
+			OTP:               mustGetInt("OTP_TTL"),
+			OTPThrottle:       mustGetInt("OTP_THROTTLE_TTL"),
+			VerifyWindow:      mustGetInt("VERIFY_THROTTLE_WINDOW"),
+			VerifyWindowLimit: mustGetInt("VERIFY_THROTTLE_WINDOW_LIMIT"),
+		},
+		JWT: JWT{
+			OTT: mustGetDur("JWT_OTT"),
+			ATK: mustGetInt("JWT_ATK"),
+			RTK: mustGetDur("JWT_RTK"),
+			KEY: []byte(mustGet("JWT_KEY")),
+		},
+		Redis: Redis{
+			Addr:         mustGet("REDIS_ADDR"),
+			Password:     os.Getenv("REDIS_PASSWORD"),
+			DB:           mustGetInt("REDIS_DB"),
+			DialTimeout:  mustGetDur("REDIS_DIAL_TIMEOUT"),
+			ReadTimeout:  mustGetDur("REDIS_READ_TIMEOUT"),
+			WriteTimeout: mustGetDur("REDIS_WRITE_TIMEOUT"),
+			PingTimeout:  mustGetDur("REDIS_PING_TIMEOUT"),
+		},
+		MySQL: MySQL{
+			DSN:                   mustGet("MYSQL_DSN"),
+			MaxOpenConnections:    mustGetInt("MYSQL_MAX_OPEN_CONNECTION"),
+			MaxIdleConnections:    mustGetInt("MYSQL_MAX_IDLE_CONNECTION"),
+			ConnectionMaxLifetime: mustGetDur("MYSQL_CONNECTION_MAX_LIFE_TIME"),
+			ConnectionMaxIdleTime: mustGetDur("MYSQL_CONNECTION_MAX_IDLE_TIME"),
+		},
+	}
+
+}
+
 type JWT struct {
 	OTT time.Duration
 	ATK int
@@ -32,70 +100,6 @@ type MySQL struct {
 	MaxIdleConnections    int
 	ConnectionMaxLifetime time.Duration
 	ConnectionMaxIdleTime time.Duration
-}
-
-type Timeouts struct {
-	Request       time.Duration
-	RequestCode   time.Duration
-	VerifyCode    time.Duration
-	CreateAccount time.Duration
-	SetUsername   time.Duration
-}
-
-type RedisTTL struct {
-	OTP         int
-	OTPThrottle int
-}
-
-type Config struct {
-	Redis    Redis
-	MySQL    MySQL
-	Timeouts Timeouts
-	RedisTTL RedisTTL
-	JWT      JWT
-}
-
-var C Config
-
-func Init() {
-	_ = godotenv.Load("dev.env")
-
-	C = Config{
-		Redis: Redis{
-			Addr:         mustGet("REDIS_ADDR"),
-			Password:     os.Getenv("REDIS_PASSWORD"),
-			DB:           mustGetInt("REDIS_DB"),
-			DialTimeout:  mustGetDur("REDIS_DIAL_TIMEOUT"),
-			ReadTimeout:  mustGetDur("REDIS_READ_TIMEOUT"),
-			WriteTimeout: mustGetDur("REDIS_WRITE_TIMEOUT"),
-			PingTimeout:  mustGetDur("REDIS_PING_TIMEOUT"),
-		},
-		MySQL: MySQL{
-			DSN:                   mustGet("MYSQL_DSN"),
-			MaxOpenConnections:    mustGetInt("MYSQL_MAX_OPEN_CONNECTION"),
-			MaxIdleConnections:    mustGetInt("MYSQL_MAX_IDLE_CONNECTION"),
-			ConnectionMaxLifetime: mustGetDur("MYSQL_CONNECTION_MAX_LIFE_TIME"),
-			ConnectionMaxIdleTime: mustGetDur("MYSQL_CONNECTION_MAX_IDLE_TIME"),
-		},
-		Timeouts: Timeouts{
-			Request:       mustGetDur("REQUEST_TIMEOUT"),
-			RequestCode:   mustGetDur("REQUEST_CODE"),
-			VerifyCode:    mustGetDur("VERIFY_CODE"),
-			CreateAccount: mustGetDur("CREATE_ACCOUNT"),
-			SetUsername:   mustGetDur("SET_USERNAME"),
-		},
-		RedisTTL: RedisTTL{
-			OTP:         mustGetInt("OTP_TTL"),
-			OTPThrottle: mustGetInt("OTP_THROTTLE_TTL"),
-		},
-		JWT: JWT{
-			OTT: mustGetDur("JWT_OTT"),
-			ATK: mustGetInt("JWT_ATK"),
-			RTK: mustGetDur("JWT_RTK"),
-			KEY: []byte(mustGet("JWT_KEY")),
-		},
-	}
-
 }
 
 func mustGet(key string) string {
