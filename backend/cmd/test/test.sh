@@ -8,8 +8,8 @@ curl -s -D /tmp/req_hdr.txt -o /tmp/req_body.json \
 cat /tmp/req_hdr.txt
 cat /tmp/req_body.json
 
-codeID=$(jq -er '.otp_id' /tmp/req_body.json) || {
-  echo "failed to parse .otp_id from body"; exit 1;
+codeID=$(jq -er '.code_id' /tmp/req_body.json) || {
+  echo "failed to parse .code_id from body"; exit 1;
 }
 
 # Verify Code
@@ -19,7 +19,7 @@ read code
 curl -s -D /tmp/req_hdr.txt -o /tmp/req_body.json \
   -X POST http://localhost:8080/api/auth/verify-code \
   -H "Content-Type:application/json" \
-  -d "{\"otp_id\":\"$codeID\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"
+  -d "{\"code_id\":\"$codeID\",\"code\":\"$code\",\"email\":\"patrick.jiang@plu.edu\",\"scene\":\"signup\"}"
 
 cat /tmp/req_hdr.txt
 cat /tmp/req_body.json

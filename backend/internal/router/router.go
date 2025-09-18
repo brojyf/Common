@@ -42,6 +42,7 @@ func SetupRouter(d Deps) *gin.Engine {
 		authGroup := apiGroup.Group("/auth")
 		{
 			authGroup.POST("/request-code", authH.HandleRequestCode)
+			authGroup.POST("/verify-code", authH.HandleVerifyCode)
 		}
 	}
 

@@ -9,7 +9,8 @@ import (
 )
 
 type AuthHandler interface {
-	HandleRequestCode(*gin.Context)
+	HandleVerifyCode(c *gin.Context)
+	HandleRequestCode(c *gin.Context)
 }
 
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {
@@ -69,7 +70,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	}
 
 	// 2. Call service
-	otpID, err := h.svc.RequestCode(ctx, req.Email, req.Scene)
+	codeID, err := h.svc.RequestCode(ctx, req.Email, req.Scene)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrBadRequest):
@@ -86,7 +87,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 
 	// 3. Write JSON
 	httpx.TryWriteJSON(c, ctx, 200, gin.H{
-		"otp_id": otpID,
+		"code_id": codeID,
 	})
 }
 

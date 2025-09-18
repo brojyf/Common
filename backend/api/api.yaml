@@ -99,7 +99,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, scene, code, otp_id]
+              required: [email, scene, code, code_id]
               properties:
                 email:
                   $ref: '#/components/schemas/Email'
@@ -107,7 +107,7 @@ paths:
                   $ref: '#/components/schemas/Scene'
                 code:
                   type: string
-                otp_id:
+                code_id:
                   type: string
       responses:
         '200':
@@ -151,7 +151,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [otp_id]
+                required: [code_id]
                 properties:
                   otp_id:
                     type: string
