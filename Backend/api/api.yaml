@@ -20,7 +20,7 @@ security:
 
 tags:
   - name: Auth
-    description:
+    description: authentication group
 
 components:
   securitySchemes:
@@ -43,7 +43,6 @@ components:
         - expires_in
         - refresh_token
         - user_id
-        - device_id
       properties:
         access_token:
           type: string
@@ -58,8 +57,6 @@ components:
           type: integer
           format: int64
           description: unsigned integer 54
-        device_id:
-          type: string
     EmailAndPassword:
       type: object
       required: [email, password]
@@ -99,180 +96,6 @@ components:
           type: string
 
 paths:
-  /auth/logout:
-    post:
-      summary: logout and delete device id
-      tags: [Auth]
-
-  /auth/me/set-username:
-    patch:
-      summary: update username
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [username]
-              properties:
-                username:
-                  $ref: '#/components/schemas/Username'
-      responses:
-        '200':
-          description: username updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [username]
-                properties:
-                  username:
-                    $ref: '#/components/schemas/Username'
-        '400':
-          description: invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: missing or invalid access token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /auth/logout-all:
-    post:
-      summary: log out all devices
-      tags: [Auth]
-
-  /auth/reset-password:
-    patch:
-      summary: reset password when logged in
-      tags: [Auth]
-
-  /auth/forget-password:
-    post:
-      summary: reset password when forget password
-      tags: [Auth]
-      security:
-        - OneTimeBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [password]
-              properties:
-                password:
-                  $ref: '#/components/schemas/Password'
-      responses:
-        '200':
-          description: password reset successfully
-        '400':
-          description: invalid request body
-          content: 
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: invalid one time token or expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          
-
-  /auth/create-account:
-    post:
-      summary: create account with signup token and return auth response
-      tags: [Auth]
-      security:
-        - OneTimeBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [password]
-              properties:
-                password:
-                  $ref: '#/components/schemas/Password'
-      responses:
-        '201':
-          description: account created, return access/refresh tokens
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          description: invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: invalid signup token expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: email already exits
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /auth/verify-code:
-    post:
-      summary: verify the code sent to email and return signup token
-      tags: [Auth]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [otp_id, code, email, scene]
-              properties:
-                otp_id:
-                  type: string
-                code:
-                  type: string
-                  pattern: '^[0-9]{6}$'
-                email:
-                  $ref: '#/components/schemas/Email'
-                scene:
-                  $ref: '#/components/schemas/Scene'
-      responses:
-        '200':
-          description: verification success, return signup token
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [token]
-                properties:
-                  opt:
-                    type: string
-        '400':
-          description: invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: invalid code or expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
   /auth/request-code:
     post:
       summary: apply for verification code
@@ -303,99 +126,9 @@ paths:
                     type: string
         '400':
           description: invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '429':
           description: frequency limit
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
-  /auth/login:
-    post:
-      summary: user login
-      tags: [Auth]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/EmailAndPassword"
-      responses:
-        '200':
-          description: login successfully, return access token and refresh token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: login failed, check error code for more information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-                examples:
-                  invalid_credential:
-                    value: {"code": "INVALID_CREDENTIALS", "error": "username or password incorrect"}
-                  account_not_found:
-                    value: {"code": "ACCOUNT_NOT_FOUND", "error": "cannot find email"}
-        '429':
-          description: frequency limit
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /auth/refresh:
-    post:
-      summary: using refresh token to get new access token
-      tags: [Auth]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [refresh_token, device_id]
-              properties:
-                refresh_token:
-                  type: string
-                device_id:
-                  type: string
-      responses:
-        '200':
-          description: return new access token successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [ access_token, token_type, expires_in ]
-                properties:
-                  access_token:
-                    type: string
-                  token_type:
-                    type: string
-                    example: Bearer
-                  expires_in:
-                    type: integer
-                    description: access token expiration time in seconds
-        '400':
-          description: invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: invalid refresh token or refresh token expires
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /ping:
     get:

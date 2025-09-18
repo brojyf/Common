@@ -3,8 +3,8 @@ package router
 import (
 	"Backend/internal/config"
 	"Backend/internal/handlers"
-	"Backend/internal/middleware"
-	"Backend/internal/repo"
+	"Backend/internal/middlewares"
+	"Backend/internal/repos"
 	"Backend/internal/services"
 	"database/sql"
 
@@ -18,37 +18,34 @@ type Deps struct {
 }
 
 func SetupRouter(d Deps) *gin.Engine {
+	// 1. Set Up Engine
 	r := gin.Default()
 
-	// context: RID -> Timeout
+	// 2. User Middlewares
 	r.Use(gin.Recovery())
-	r.Use(middleware.RequestID())
-	r.Use(middleware.Timeout(config.C.Timeouts.Request))
-	r.Use(middleware.AccessLog())
+	r.Use(middlewares.RequestID())
+	r.Use(middlewares.Timeout(config.C.Timeouts.Request))
+	r.Use(middlewares.AccessLog())
 
-	authRepo := repo.NewAuthRepo(d.DB, d.RDB)
+	// 3. Dependencies Injection
+	authRepo := repos.NewAuthRepo(d.DB, d.RDB)
 	authSvc := services.NewAuthService(authRepo)
 	authH := handlers.NewAuthHandler(authSvc)
 
+	// 4. Register Router
 	apiGroup := r.Group("/api")
 	{
+		// a. Health Check
 		apiGroup.GET("/ping", checkHealth)
 
+		// b. Auth
 		authGroup := apiGroup.Group("/auth")
 		{
-			authGroup.POST("/refresh", authH.HandleRefresh)
-			authGroup.POST("/login", authH.HandleLogin)
 			authGroup.POST("/request-code", authH.HandleRequestCode)
-			authGroup.POST("/verify-code", authH.HandleVerifyCode)
-			authGroup.POST("/create-account", middleware.OTP(), authH.HandleCreateAccount)
-			authGroup.POST("/forget-password", middleware.OTP(), authH.HandleForgetPassword)
-			authGroup.PATCH("/reset-password", middleware.ATK(), authH.HandleResetPassword)
-			authGroup.POST("/logout-all", middleware.ATK(), authH.HandleLogoutAll)
-			authGroup.PATCH("/me/set-username", middleware.ATK(), authH.HandleSetUsername)
-			authGroup.POST("/logout", middleware.ATK(), authH.HandleLogout)
 		}
 	}
 
+	// 5. Return router
 	return r
 }
 

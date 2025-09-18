@@ -8,10 +8,10 @@ import (
 )
 
 func main() {
-	// 1. Init Config
+	// 1. Get env
 	config.Init()
 
-	// 2. Init DB
+	// 2. Init db
 	db := bootstrap.NewDB(bootstrap.DBConfig{
 		DSN:             config.C.MySQL.DSN,
 		MaxOpenConn:     config.C.MySQL.MaxOpenConnections,
@@ -31,7 +31,8 @@ func main() {
 	})
 	defer func() { _ = rdb.Close() }()
 
-	// 3. Setup Router: gin.SetMode(gin.ReleaseMode)
+	// 3. Set up router
+	// Production mode：gin.SetMode(gin.ReleaseMode)
 	r := router.SetupRouter(router.Deps{
 		DB:  db,
 		RDB: rdb,
@@ -39,7 +40,7 @@ func main() {
 
 	// 4. Start Server
 	addr := ":8080"
-	log.Printf("server running on %s", addr)
+	log.Printf("Listening on %s...", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatal("Error starting server", err)
 	}

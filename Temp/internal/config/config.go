@@ -43,8 +43,8 @@ type Timeouts struct {
 }
 
 type RedisTTL struct {
-	OTP         int
-	OTPThrottle int
+	OTP         time.Duration
+	OTPThrottle time.Duration
 }
 
 type Config struct {
@@ -85,8 +85,8 @@ func Init() {
 			SetUsername:   mustGetDur("SET_USERNAME"),
 		},
 		RedisTTL: RedisTTL{
-			OTP:         mustGetInt("OTP_TTL"),
-			OTPThrottle: mustGetInt("OTP_THROTTLE_TTL"),
+			OTP:         mustGetDur("OTP_TTL"),
+			OTPThrottle: mustGetDur("OTP_THROTTLE_TTL"),
 		},
 		JWT: JWT{
 			OTP: mustGetDur("JWT_OTP"),
