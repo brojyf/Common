@@ -89,7 +89,7 @@ func Init() {
 			OTPThrottle: mustGetInt("OTP_THROTTLE_TTL"),
 		},
 		JWT: JWT{
-			OTT: mustGetDur("JWT_OTP"),
+			OTT: mustGetDur("JWT_OTT"),
 			ATK: mustGetInt("JWT_ATK"),
 			RTK: mustGetDur("JWT_RTK"),
 			KEY: []byte(mustGet("JWT_KEY")),
