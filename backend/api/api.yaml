@@ -99,10 +99,14 @@ paths:
           application/json:
             schema:
               type: object
-              required: [password]
+              required: [password, device_id]
               properties:
                 password:
                   $ref: '#/components/schemas/Password'
+                device_id:
+                  type: string
+                  format: uuid
+
       responses:
         '200':
           description: account created successfully
