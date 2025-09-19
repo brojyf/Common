@@ -3,14 +3,16 @@ package repos
 import "errors"
 
 var (
-	// 429
+	// ErrRateLimited 429
 	ErrRateLimited = errors.New("throttle")
 
-	//401
+	// ErrOTPInvalid 401
 	ErrOTPInvalid = errors.New("invalid one-time password")
+	// ErrOTPExpired 401
 	ErrOTPExpired = errors.New("expired one-time password")
 
-	// 500
-	ErrRunScript       = errors.New("run script error")
+	// ErrRunScript 500: Error when running lua script
+	ErrRunScript = errors.New("run script error")
+	// ErrUnexpectedReply 500: Unexpected reply from lua
 	ErrUnexpectedReply = errors.New("unexpected response")
 )
