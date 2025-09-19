@@ -52,6 +52,7 @@ func Init() {
 			VerifyWindowLimit: mustGetInt("VERIFY_THROTTLE_WINDOW_LIMIT"),
 		},
 		JWT: JWT{
+			ISS: mustGet("JWT_ISS"),
 			OTT: mustGetDur("JWT_OTT"),
 			ATK: mustGetInt("JWT_ATK"),
 			RTK: mustGetDur("JWT_RTK"),
@@ -78,6 +79,7 @@ func Init() {
 }
 
 type JWT struct {
+	ISS string
 	OTT time.Duration
 	ATK int
 	RTK time.Duration

@@ -13,6 +13,7 @@ func SignOTT(email, scene, jti string, ttl time.Duration) (string, error) {
 		Email: email,
 		Scene: scene,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    config.C.JWT.ISS,
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 			ID:        jti,
 		},
