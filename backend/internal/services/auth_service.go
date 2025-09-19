@@ -45,7 +45,16 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 		return "", ErrBadRequest
 	}
 
-	// 2. Call repo: Check throttle -> Match code -> Consume code
+
+	// 2. Sign token
+	ttl := config.C.JWT.OTT
+	token, err := jwt.SignOTT(email, scene, ttl)
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.VerifyCodeAndGenToken.SignOTT", err)
+		return "", ErrInternalServer
+	}
+
+	// 3. Call repo: Check throttle -> Match code -> Consume code
 	verifyLimit := config.C.RedisTTL.VerifyWindowLimit
 	window := config.C.RedisTTL.VerifyWindow
 	if err := s.repo.ThrottleMatchAndConsumeCode(cctx, email, scene, codeID, code, verifyLimit, window); err != nil {
@@ -61,14 +70,6 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 			logx.LogError(ctx, "AuthSvc.VerifyCodeAndGenToken.ThrottleMatchAndConsumeCode", err)
 			return "", ErrInternalServer
 		}
-	}
-
-	// 3. Sign token
-	ttl := config.C.JWT.OTT
-	token, err := jwt.SignOTT(email, scene, ttl)
-	if err != nil {
-		logx.LogError(ctx, "AuthSvc.VerifyCodeAndGenToken.SignOTT", err)
-		return "", ErrInternalServer
 	}
 
 	return token, nil
