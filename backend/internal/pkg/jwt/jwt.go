@@ -7,13 +7,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func SignOTT(email, scene string, ttl time.Duration) (string, error) {
+func SignOTT(email, scene, jti string, ttl time.Duration) (string, error) {
 	now := time.Now()
 	claims := OTTClaims{
 		Email: email,
 		Scene: scene,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+			ID:        jti,
 		},
 	}
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

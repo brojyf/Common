@@ -11,12 +11,12 @@ import (
 )
 
 type AuthRepo interface {
-	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code string, limit, window int) error
+	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window int) error
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
 }
 
 // ThrottleMatchAndConsumeCode Check verify throttle -> Match code -> Consume code
-func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code string, limit, window int) error {
+func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window int) error {
 
 	// 1. Define keys & args
 	keys := []string{
