@@ -7,6 +7,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+func SignATK() (string, error) {
+	return "", nil
+}
+
 func SignOTT(email, scene, jti string, ttl time.Duration) (string, error) {
 	now := time.Now()
 	claims := OTTClaims{
@@ -21,6 +25,8 @@ func SignOTT(email, scene, jti string, ttl time.Duration) (string, error) {
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return tok.SignedString(config.C.JWT.KEY)
 }
+
+type ATKClaims struct{}
 
 type OTTClaims struct {
 	Email string `json:"email"`
