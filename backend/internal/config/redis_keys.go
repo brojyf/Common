@@ -4,6 +4,11 @@ import (
 	"fmt"
 )
 
+// RedisKeyOTTJTIUsed ott:jti:used:<email>:<scene>:<jti>
+func RedisKeyOTTJTIUsed(email, scene, jti string) string {
+	return fmt.Sprintf("ott:jti:used:%s:%s:%s", email, scene, jti)
+}
+
 // RedisKeyVerifyThrottle verify:throttle:<email>:<scene>
 func RedisKeyVerifyThrottle(email, scene string) string {
 	return fmt.Sprintf("verify:throttle:%s:%s", email, scene)
