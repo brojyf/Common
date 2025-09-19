@@ -23,13 +23,46 @@ import (
 )
 
 type AuthService interface {
-	CreateAccount(ctx context.Context, email string) error
+	CreateAccount(ctx context.Context, email, scene, jti, pwd string) (AuthResponse, error)
 	VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error)
 	RequestCode(ctx context.Context, email, scene string) (string, error)
 }
+type AuthResponse struct {
+	ATK       string `json:"access_token"`
+	TokenType string `json:"token_type"`
+	ExpiresIn int    `json:"expires_in"`
+	RTK       string `json:"refresh_token"`
+	UserID    uint64 `json:"user_id"`
+}
 
-func (s *authService) CreateAccount(ctx context.Context, email string) error {
-	return nil
+func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd string) (AuthResponse, error) {
+
+	// 0. Create sub context
+	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.CreateAccount)
+	defer cancel()
+
+	// 1. Check input
+	if !isValidPassword(pwd) || scene != "signup" {
+		return AuthResponse{}, ErrBadRequest
+	}
+
+	// 2. Sign Tokens
+	atk, err := jwt.SignATK()
+	if err != nil {
+		return AuthResponse{}, ErrInternalServer
+	}
+	rtk := uuid.NewString()
+
+	// 3. Repo
+	uid := uint64(0)
+
+	return AuthResponse{
+		ATK:       atk,
+		TokenType: "Bearer",
+		ExpiresIn: config.C.JWT.ATK,
+		RTK:       rtk,
+		UserID:    uid,
+	}, nil
 }
 
 func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error) {

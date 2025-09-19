@@ -17,6 +17,9 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 
 	// 0. Get context
 	ctx := c.Request.Context()
+	email := c.GetString("email")
+	scene := c.GetString("scene")
+	jti := c.GetString("jti")
 
 	// 1. Bind JSON
 	var req struct {
@@ -29,7 +32,7 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	}
 
 	// 2. Call service
-	_ = h.svc.CreateAccount(ctx, req.Password)
+	_, _ = h.svc.CreateAccount(ctx, email, scene, jti, req.Password)
 
 	// 3. Write JSON
 	c.JSON(200, gin.H{"status": "created"})
