@@ -88,6 +88,35 @@ components:
           type: string
 
 paths:
+  /auth/create-account:
+    post:
+      summary: create account using email from jwt, password
+      tags: [Auth]
+      security: [{ OneTimeBearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  $ref: '#/components/schemas/Password'
+      responses:
+        '200':
+          description: account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: bad request
+        '401':
+          description: unauthorized, invalid scene/expired token/invalid token
+        '409':
+          description: email already exists
+
   /auth/verify-code:
     post:
       summary: check the code sent via email

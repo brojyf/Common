@@ -23,8 +23,13 @@ import (
 )
 
 type AuthService interface {
+	CreateAccount(ctx context.Context, email string) error
 	VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error)
 	RequestCode(ctx context.Context, email, scene string) (string, error)
+}
+
+func (s *authService) CreateAccount(ctx context.Context, email string) error {
+	return nil
 }
 
 func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error) {

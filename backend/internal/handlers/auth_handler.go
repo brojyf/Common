@@ -13,6 +13,27 @@ type AuthHandler interface {
 	HandleRequestCode(c *gin.Context)
 }
 
+func (h *authHandler) HandleCreateAccount(c *gin.Context) {
+
+	// 0. Get context
+	ctx := c.Request.Context()
+
+	// 1. Bind JSON
+	var req struct {
+		Password string `json:"password" binding:"required,max=20,min=8"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.WriteBadReq(c)
+		return
+	}
+
+	// 2. Call service
+	_ = h.svc.CreateAccount(ctx, req.Password)
+
+	// 3. Write JSON
+	c.JSON(200, gin.H{"status": "created"})
+}
+
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 
 	// 0. Get context
