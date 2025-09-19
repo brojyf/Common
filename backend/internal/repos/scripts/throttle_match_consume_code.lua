@@ -36,4 +36,7 @@ end
 
 -- 匹配则消费（删除）
 redis.call("DEL", KEYS[2])
+
+-- 设置JTI有效
+redis.call("SETEX", KEYS[3], tonumber(ARGV[4]), 0)
 return "OK"

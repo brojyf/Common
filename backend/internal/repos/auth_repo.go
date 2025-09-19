@@ -11,19 +11,20 @@ import (
 )
 
 type AuthRepo interface {
-	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window int) error
+	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window, jtiTTL int) error
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
 }
 
-// ThrottleMatchAndConsumeCode Check verify throttle -> Match code -> Consume code
-func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window int) error {
+// ThrottleMatchAndConsumeCode Check verify throttle -> Match code -> Consume code -> Set jti unused
+func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window, jtiTTL int) error {
 
 	// 1. Define keys & args
 	keys := []string{
 		config.RedisKeyVerifyThrottle(email, scene),
 		config.RedisKeyOTP(email, scene, codeID),
+		config.RedisKeyOTTJTIUsed(email, scene, jti),
 	}
-	args := []interface{}{limit, window, code}
+	args := []interface{}{limit, window, code, jtiTTL}
 
 	// 2. Query
 	res, err := r.scripts.ThrottleMatchAndConsumeCode.Run(ctx, r.rdb, keys, args...).Result()
