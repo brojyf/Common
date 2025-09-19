@@ -32,7 +32,9 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	}
 
 	// 2. Call service
-	_, _ = h.svc.CreateAccount(ctx, email, scene, jti, req.Password)
+	err := h.svc.CreateAccount(ctx, email, scene, jti, req.Password)
+	if err != nil {
+	}
 
 	// 3. Write JSON
 	c.JSON(200, gin.H{"status": "created"})
