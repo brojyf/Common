@@ -21,6 +21,7 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	// 1. Bind JSON
 	var req struct {
 		Password string `json:"password" binding:"required,max=20,min=8"`
+		DeviceID string `json:"device_id" binding:"required,uuid4"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpx.WriteBadReq(c, "The length of password should be between 8 and 20.")
@@ -44,7 +45,7 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 		Email  string `json:"email" binding:"required,email,max=255"`
 		Scene  string `json:"scene" binding:"required,oneof=signup reset_password"`
 		Code   string `json:"code" binding:"required,len=6"`
-		CodeID string `json:"code_id" binding:"required"`
+		CodeID string `json:"code_id" binding:"required,uuid4"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpx.WriteBadReq(c, "Please enter a valid code")
