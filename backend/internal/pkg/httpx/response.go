@@ -20,31 +20,43 @@ func TryWriteJSON(c *gin.Context, ctx context.Context, code int, data interface{
 	c.JSON(code, data)
 }
 
-func WriteBadReq(c *gin.Context) {
-	WriteJSON(c, http.StatusBadRequest, gin.H{"error": "bad request"})
+func WriteBadReq(c *gin.Context, msg string) {
+	WriteJSON(c, http.StatusBadRequest, gin.H{
+		"code":  "BAD_REQUEST",
+		"error": msg,
+	})
 }
 
-func WriteUnauthorized(c *gin.Context) {
-	WriteJSON(c, http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+func WriteUnauthorized(c *gin.Context, msg string) {
+	WriteJSON(c, http.StatusUnauthorized, gin.H{
+		"code":  "UNAUTHORIZED",
+		"error": msg,
+	})
 }
 
 func WriteTooManyReq(c *gin.Context) {
-	WriteJSON(c, http.StatusTooManyRequests, gin.H{"error": "too many request"})
+	WriteJSON(c, http.StatusTooManyRequests, gin.H{
+		"code":  "TOO_MANY_REQUEST",
+		"error": "The request was too frequent. Please try again later.",
+	})
 }
 
 func WriteInternal(c *gin.Context) {
-	WriteJSON(c, http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	WriteJSON(c, http.StatusInternalServerError, gin.H{
+		"code":  "INTERNAL_SERVER_ERROR",
+		"error": "Internal server error. Please try again later.",
+	})
 }
 
 // WriteCtxError Write 499/504, default 500
 func WriteCtxError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
-		c.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"code": "REQUEST_TIMEOUT", "error": "request timed out"})
+		c.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"code": "REQUEST_TIMEOUT", "error": "Request timed out."})
 	case errors.Is(err, context.Canceled):
-		c.AbortWithStatusJSON(499, gin.H{"code": "REQUEST_CANCELED", "error": "client canceled request"})
+		c.AbortWithStatusJSON(499, gin.H{"code": "REQUEST_CANCELED", "error": "You canceled request."})
 	default:
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "error": "internal server error"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "error": "Internal server error."})
 	}
 }
 

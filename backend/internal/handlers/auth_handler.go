@@ -23,7 +23,7 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		Password string `json:"password" binding:"required,max=20,min=8"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		httpx.WriteBadReq(c)
+		httpx.WriteBadReq(c, "The length of password should be between 8 and 20.")
 		return
 	}
 
@@ -47,7 +47,7 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 		CodeID string `json:"code_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		httpx.WriteBadReq(c)
+		httpx.WriteBadReq(c, "Please enter a valid code")
 		return
 	}
 
@@ -56,9 +56,9 @@ func (h *authHandler) HandleVerifyCode(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrBadRequest):
-			httpx.WriteBadReq(c)
+			httpx.WriteBadReq(c, "Please enter a valid code.")
 		case errors.Is(err, services.ErrUnauthorized):
-			httpx.WriteUnauthorized(c)
+			httpx.WriteUnauthorized(c, "Verification code is invalid or expired.")
 		case errors.Is(err, services.ErrTooManyRequest):
 			httpx.WriteTooManyReq(c)
 		case errors.Is(err, services.ErrCtxError):
@@ -86,7 +86,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 		Scene string `json:"scene" binding:"required,oneof=signup reset_password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		httpx.WriteBadReq(c)
+		httpx.WriteBadReq(c, "Please check your email.")
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *authHandler) HandleRequestCode(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrBadRequest):
-			httpx.WriteBadReq(c)
+			httpx.WriteBadReq(c, "Please check your email.")
 		case errors.Is(err, services.ErrTooManyRequest):
 			httpx.WriteTooManyReq(c)
 		case errors.Is(err, services.ErrCtxError):
