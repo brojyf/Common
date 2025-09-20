@@ -24,21 +24,21 @@ curl -s -D /tmp/req_hdr.txt -o /tmp/req_body.json \
 cat /tmp/req_hdr.txt
 cat /tmp/req_body.json
 
-otp=$(jq -er '.token' /tmp/req_body.json) || {
+token=$(jq -er '.token' /tmp/req_body.json) || {
   echo "failed to parse .token from body"; exit 1;
 }
 
-## Create Account
-#printf "\n\033[32m*** /auth/create-account ***\033[0m\n"
-#curl -s -D /tmp/req_hdr.txt -o /tmp/req_body.json \
-#  -X POST http://localhost:8080/api/auth/create-account \
-#  -H "Content-Type:application/json" \
-#  -H "Authorization: Bearer $otp"\
-#  -d '{"password":"ThisIsFake123!"}'
-#
-#cat /tmp/req_hdr.txt
-#cat /tmp/req_body.json
-#
+# Create Account
+printf "\n\033[32m*** /auth/create-account ***\033[0m\n"
+curl -s -D /tmp/req_hdr.txt -o /tmp/req_body.json \
+  -X POST http://localhost:8080/api/auth/create-account \
+  -H "Content-Type:application/json" \
+  -H "Authorization: Bearer $token"\
+  -d '{"password":"ThisIsFake123!","device_id":"a2332d21-b576-4af5-a4bf-f2fe6f0c9b50"}'
+
+cat /tmp/req_hdr.txt
+cat /tmp/req_body.json
+
 #ATK=$(jq -er '.access_token' /tmp/req_body.json) || {
 #      echo "failed to parse .access_token from body"; exit 1;
 #}
