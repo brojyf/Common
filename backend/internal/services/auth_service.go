@@ -23,6 +23,7 @@ import (
 )
 
 type AuthService interface {
+	Login(ctx context.Context, email, password, deviceID string) (AuthResponse, error)
 	CreateAccount(ctx context.Context, email, scene, jti, pwd string) error
 	VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error)
 	RequestCode(ctx context.Context, email, scene string) (string, error)
@@ -33,6 +34,16 @@ type AuthResponse struct {
 	ExpiresIn int    `json:"expires_in"`
 	RTK       string `json:"refresh_token"`
 	UserID    uint64 `json:"user_id"`
+}
+
+func (s *authService) Login(ctx context.Context, email, password, deviceID string) (AuthResponse, error) {
+	return AuthResponse{
+		ATK:       "this is atk",
+		TokenType: "Bearer",
+		ExpiresIn: 3600,
+		RTK:       "this is rtk",
+		UserID:    0,
+	}, nil
 }
 
 func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd string) error {
@@ -46,9 +57,8 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd 
 		return ErrBadRequest
 	}
 
-	// 2. Sign Tokens
+	// 2. Repo
 	print(cctx)
-	// 3. Repo
 
 	return nil
 }

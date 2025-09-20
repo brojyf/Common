@@ -9,6 +9,7 @@ import (
 )
 
 type AuthHandler interface {
+	HandleCreateAccount(c *gin.Context)
 	HandleVerifyCode(c *gin.Context)
 	HandleRequestCode(c *gin.Context)
 }
@@ -31,13 +32,17 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		return
 	}
 
-	// 2. Call service
+	// 2.1  Call service: Create Account
 	err := h.svc.CreateAccount(ctx, email, scene, jti, req.Password)
+	if err != nil {
+	}
+	// 2.2 Call service: Login
+	resp, err := h.svc.Login(ctx, email, req.DeviceID, req.Password)
 	if err != nil {
 	}
 
 	// 3. Write JSON
-	c.JSON(200, gin.H{"status": "created"})
+	c.JSON(200, resp)
 }
 
 func (h *authHandler) HandleVerifyCode(c *gin.Context) {
