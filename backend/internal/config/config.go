@@ -14,6 +14,7 @@ type Timeouts struct {
 	RequestCode   time.Duration
 	VerifyCode    time.Duration
 	CreateAccount time.Duration
+	Login         time.Duration
 	SetUsername   time.Duration
 }
 
@@ -44,6 +45,7 @@ func Init() {
 			VerifyCode:    mustGetDur("VERIFY_CODE"),
 			CreateAccount: mustGetDur("CREATE_ACCOUNT"),
 			SetUsername:   mustGetDur("SET_USERNAME"),
+			Login:         mustGetDur("LOGIN"),
 		},
 		RedisTTL: RedisTTL{
 			OTP:               mustGetInt("OTP_TTL"),
@@ -75,7 +77,6 @@ func Init() {
 			ConnectionMaxIdleTime: mustGetDur("MYSQL_CONNECTION_MAX_IDLE_TIME"),
 		},
 	}
-
 }
 
 type JWT struct {
