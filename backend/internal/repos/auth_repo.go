@@ -11,8 +11,30 @@ import (
 )
 
 type AuthRepo interface {
+	ThrottleLoginStoreDIDAndSession(ctx context.Context, email, password, deviceID string) error
+	CheckOTTAndWriteUser(ctx context.Context, email, scene, jti, pwd string) error
 	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window, jtiTTL int) error
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
+}
+
+// LoginStoreDIDAndSession TX: Store device id -> Store session
+func (r *authRepo) ThrottleLoginStoreDIDAndSession(ctx context.Context, email, password, deviceID string) error {
+
+	// 1. Run Lua
+
+	// 2. Write SQL
+
+	return nil
+}
+
+// CheckOTTAndWriteUser Check OTT -> Write user (Failed undo OTT)
+func (r *authRepo) CheckOTTAndWriteUser(ctx context.Context, email, scene, jti, pwd string) error {
+
+	// 1. Run Lua
+
+	// 2. Write SQL (Failed: write back)
+
+	return nil
 }
 
 // ThrottleMatchAndConsumeCode Check verify throttle -> Match code -> Consume code -> Set jti unused

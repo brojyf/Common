@@ -37,6 +37,26 @@ type AuthResponse struct {
 }
 
 func (s *authService) Login(ctx context.Context, email, password, deviceID string) (AuthResponse, error) {
+
+	// 0. Create sub context
+	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.Login)
+	defer cancel()
+
+	// 1. Check input
+	if !isValidEmail(email) || !isValidPassword(password) || isUUID(deviceID){
+		return AuthResponse{}, ErrBadRequest
+	}
+
+	// 2. Repo
+	if err := s.repo.ThrottleLoginStoreDIDAndSession(cctx, email, password, deviceID); err != nil {
+		switch {
+
+		}
+	}
+
+	// 3. Sign tokens
+
+
 	return AuthResponse{
 		ATK:       "this is atk",
 		TokenType: "Bearer",
@@ -58,7 +78,9 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd 
 	}
 
 	// 2. Repo
-	print(cctx)
+	if err := s.repo.CheckOTTAndWriteUser(cctx, email, scene, jti, pwd); err != nil {
+		
+	}
 
 	return nil
 }
