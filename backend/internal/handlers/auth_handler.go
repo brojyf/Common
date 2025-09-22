@@ -9,9 +9,35 @@ import (
 )
 
 type AuthHandler interface {
+	HandleLogin(c *gin.Context)
 	HandleCreateAccount(c *gin.Context)
 	HandleVerifyCode(c *gin.Context)
 	HandleRequestCode(c *gin.Context)
+}
+
+func (h *authHandler) HandleLogin(c *gin.Context) {
+
+	// 0. Get context
+	ctx := c.Request.Context()
+
+	// 1. Bind JSON
+	var req struct {
+		Email    string `json:"email" binding:"required,email,max=255"`
+		Password string `json:"password" binding:"required,max=20,min=8"`
+		DeviceID string `json:"device_id" binding:"required,uuid4"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.WriteBadReq(c, "Invalid email or password")
+		return
+	}
+
+	// 2. Call service
+	resp, err := h.svc.Login(ctx, req.Email, req.Password, req.DeviceID)
+	if err != nil {
+	}
+
+	// 3. Write JSON
+	c.JSON(200, resp)
 }
 
 func (h *authHandler) HandleCreateAccount(c *gin.Context) {
@@ -37,7 +63,7 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	if err != nil {
 	}
 	// 2.2 Call service: Login
-	resp, err := h.svc.Login(ctx, email, req.DeviceID, req.Password)
+	resp, err := h.svc.Login(ctx, email, req.Password, req.DeviceID)
 	if err != nil {
 	}
 
