@@ -47,21 +47,21 @@ CREATE INDEX idx_ud_last_seen ON user_devices(last_seen_at);
 
 CREATE TABLE sessions (
     -- Basics
-                          session_id     BIGINT UNSIGNED AUTO_INCREMENT,
-                          user_id        BIGINT UNSIGNED NOT NULL,
-                          device_id      BINARY(16) NOT NULL,
-                          rtk_hash       VARBINARY(32) NOT NULL,
-                          token_version  INT UNSIGNED NOT NULL,
-                          expires_at     TIMESTAMP NOT NULL,
-                          revoked_at     TIMESTAMP NULL,
+    session_id     BIGINT UNSIGNED AUTO_INCREMENT,
+    user_id        BIGINT UNSIGNED NOT NULL,
+    device_id      BINARY(16) NOT NULL,
+    rtk_hash       VARBINARY(32) NOT NULL,
+    token_version  INT UNSIGNED NOT NULL,
+    expires_at     TIMESTAMP NOT NULL,
+    revoked_at     TIMESTAMP NULL,
     -- Auto
-                          created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                          updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     -- Constraints
-                          PRIMARY KEY (session_id),
-                          UNIQUE KEY uk_sessions_user_device (user_id, device_id),
-                          CONSTRAINT fk_sess_user_device FOREIGN KEY (user_id, device_id)
-                              REFERENCES user_devices (user_id, device_id)
-                              ON DELETE CASCADE
-                              ON UPDATE CASCADE
+    PRIMARY KEY (session_id),
+    UNIQUE KEY uk_sessions_user_device (user_id, device_id),
+    CONSTRAINT fk_sess_user_device FOREIGN KEY (user_id, device_id)
+    REFERENCES user_devices (user_id, device_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB;
