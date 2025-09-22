@@ -88,6 +88,36 @@ components:
           type: string
 
 paths:
+  /auth/login:
+    post:
+      summary: login
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_id]
+              properties:
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: '#/components/schemas/Password'
+                device_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: success
+        '400':
+          description: invalid request body
+        '401':
+          description: unauthorized
+        '429':
+          description: too many request
+          
   /auth/create-account:
     post:
       summary: create account using email from jwt, password
@@ -106,7 +136,6 @@ paths:
                 device_id:
                   type: string
                   format: uuid
-
       responses:
         '200':
           description: account created successfully
