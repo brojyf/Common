@@ -14,7 +14,7 @@ CREATE TABLE users (
     email           VARCHAR(255)  NOT NULL,
     password_hash   VARCHAR(255)  NOT NULL,
     username        VARCHAR(50)   NOT NULL DEFAULT "J",
-     profile_photo   VARCHAR(1024) NOT NULL DEFAULT "http://localhost:8080/pfp",
+    profile_photo   VARCHAR(1024) NOT NULL DEFAULT "http://localhost:8080/pfp",
     -- Record
     token_version   INT UNSIGNED NOT NULL DEFAULT 1,
     is_deleted      TINYINT(1) NOT NULL DEFAULT 0,
