@@ -20,6 +20,13 @@ func TryWriteJSON(c *gin.Context, ctx context.Context, code int, data interface{
 	c.JSON(code, data)
 }
 
+func WriteConflict(c *gin.Context, msg string){
+	WriteJSON(c, http.StatusConflict, gin.H{
+		"code": "CONFLICT",
+		"error": msg,
+	})
+}
+
 func WriteBadReq(c *gin.Context, msg string) {
 	WriteJSON(c, http.StatusBadRequest, gin.H{
 		"code":  "BAD_REQUEST",
