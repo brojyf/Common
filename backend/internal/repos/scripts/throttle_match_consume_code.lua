@@ -6,26 +6,26 @@ local limit      = tonumber(ARGV[1])
 local window_sec = tonumber(ARGV[2])
 local expected   = ARGV[3]
 
--- 先检查是否超限
+-- 1.1 先检查是否超限
 local cur = tonumber(redis.call("GET", KEYS[1]) or "0")
 if cur >= limit then
     local ttl = redis.call("TTL", KEYS[1]) or -1
     return "THROTTLED"
 end
 
--- 写 throttle：INCR 并设置窗口过期（第一次创建时）
+-- 1.2 写 throttle：INCR 并设置窗口过期（第一次创建时）
 cur = redis.call("INCR", KEYS[1])
 if cur == 1 then
     redis.call("EXPIRE", KEYS[1], window_sec)
 end
 
--- 如果写入后超过 limit，立即返回限流
+-- 1.3 如果写入后超过 limit，立即返回限流
 if cur > limit then
     local ttl = redis.call("TTL", KEYS[1]) or -1
     return "THROTTLED"
 end
 
--- 找 code
+-- 2. 找 code
 local v = redis.call("GET", KEYS[2])
 if not v then
     return "EXPIRED"
@@ -34,9 +34,9 @@ if v ~= expected then
     return "INVALID"
 end
 
--- 匹配则消费（删除）
+-- 3. 匹配则消费（删除）
 redis.call("DEL", KEYS[2])
 
--- 设置JTI有效
+-- 4. 设置JTI有效
 redis.call("SETEX", KEYS[3], tonumber(ARGV[4]), 0)
 return "OK"
