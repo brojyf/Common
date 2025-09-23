@@ -3,7 +3,7 @@ package services
 import (
 	"backend/internal/config"
 	"backend/internal/pkg/ctx_util"
-	"backend/internal/pkg/jwt"
+	"backend/internal/pkg/jwtx"
 	"backend/internal/pkg/logx"
 	"backend/internal/repos"
 	"context"
@@ -20,6 +20,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
@@ -43,7 +44,7 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 	defer cancel()
 
 	// 1. Check input
-	if !isValidEmail(email) || !isValidPassword(password) || isUUID(deviceID){
+	if !isValidEmail(email) || !isValidPassword(password) || !isUUID(deviceID) {
 		return AuthResponse{}, ErrBadRequest
 	}
 
@@ -55,7 +56,6 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 	}
 
 	// 3. Sign tokens
-
 
 	return AuthResponse{
 		ATK:       "this is atk",
@@ -78,8 +78,24 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd 
 	}
 
 	// 2. Repo
-	if err := s.repo.CheckOTTAndWriteUser(cctx, email, scene, jti, pwd); err != nil {
-		
+	pwdHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.GenerateFromPassword", err)
+		return ErrInternalServer
+	}
+	pwdHashStr := string(pwdHash)
+	newTTL := int(config.C.JWT.OTT.Seconds())
+	if err := s.repo.CheckOTTAndWriteUser(cctx, email, scene, jti, pwdHashStr, newTTL); err != nil {
+		if ctx_util.IsCtxDone(cctx, err) { return ErrCtxError }
+		switch {
+		case errors.Is(err, repos.ErrOTPInvalid):
+			return ErrUnauthorized
+		case errors.Is(err, repos.ErrEmailAlreadyExists):
+			return ErrConflict
+		default:
+			logx.LogError(ctx, "AuthSvc.CreateAccount.CheckOTTAndWriteUser", err)
+			return ErrInternalServer
+		}
 	}
 
 	return nil
@@ -103,7 +119,7 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 
 	// 3. Sign token
 	ttl := config.C.JWT.OTT
-	token, err := jwt.SignOTT(email, scene, jti, ttl)
+	token, err := jwtx.SignOTT(email, scene, jti, ttl)
 	if err != nil {
 		logx.LogError(ctx, "AuthSvc.VerifyCodeAndGenToken.SignOTT", err)
 		return "", ErrInternalServer
