@@ -97,7 +97,6 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd 
 		}
 	}
 
-	log.Printf("C A")
 	return nil
 }
 
