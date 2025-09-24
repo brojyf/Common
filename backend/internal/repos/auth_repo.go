@@ -15,36 +15,51 @@ import (
 )
 
 type AuthRepo interface {
-	ThrottleLoginStoreDIDAndSession(ctx context.Context, email, password, deviceID string) error
-	CheckOTTAndWriteUser(ctx context.Context, email, scene, jti, pwd string, newTTL int) error
+	StoreDIDAndSession(ctx context.Context, uid uint64, did string) error
+	UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int)
+	CreateUser(ctx context.Context, email, pwd string) (uint64, error)
+	ConsumeOTTJTI(ctx context.Context, email, scene, jti string, newTTL int) error
+	CheckEmailExists(ctx context.Context, email string) (bool, error)
 	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window, jtiTTL int) error
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
 }
 
-// ThrottleLoginStoreDIDAndSession TX: Store device id -> Store session
-func (r *authRepo) ThrottleLoginStoreDIDAndSession(ctx context.Context, email, password, deviceID string) error {
-
-	// 1. Run Lua
-
-	// 2. Write SQL
+func (r *authRepo) StoreDIDAndSession(ctx context.Context, uid uint64, did string) error {
 
 	return nil
 }
 
-// CheckOTTAndWriteUser Check OTT -> Write user (Failed undo OTT)
-func (r *authRepo) CheckOTTAndWriteUser(ctx context.Context, email, scene, jti, pwd string, newTTL int) error {
+// UndoOTTMark Undo one time token mark after sql failed
+func (r *authRepo) UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int) {
+	ttl := time.Duration(ttlSec) * time.Second
+	_ = r.rdb.Set(ctx, config.RedisKeyOTTJTIUsed(email, scene, jti), 0, ttl).Err()
+}
 
-	// 1. Check if email exists
-	var exists int
-	err := r.db.QueryRowContext(ctx, "SELECT 1 FROM users WHERE email = ? LIMIT 1", email).Scan(&exists)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return ErrUnexpectedSQL
-	}
-	if exists == 1 {
-		return ErrEmailAlreadyExists
+// CreateUser Write new user info to sql
+func (r *authRepo) CreateUser(ctx context.Context, email, pwd string) (uint64, error) {
+	const query = `INSERT INTO users (email, password_hash) VALUES (?, ?)`
+	res, err := r.db.ExecContext(ctx, query, email, pwd)
+	if err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return 0, ctx.Err()
+		}
+		var me *mysql.MySQLError
+		if errors.As(err, &me) && me.Number == 1062 || strings.Contains(err.Error(), "Duplicate entry") {
+			return 0, ErrEmailAlreadyExists
+		}
+		return 0, ErrUnexpectedSQL
 	}
 
-	// 2. Run Lua
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, ErrUnexpectedSQL
+	}
+
+	return uint64(id), nil
+}
+
+// ConsumeOTTJTI Consume one time token jti
+func (r *authRepo) ConsumeOTTJTI(ctx context.Context, email, scene, jti string, newTTL int) error {
 	keyStr := config.RedisKeyOTTJTIUsed(email, scene, jti)
 	key := []string{keyStr}
 	arg := []interface{}{newTTL}
@@ -59,20 +74,25 @@ func (r *authRepo) CheckOTTAndWriteUser(ctx context.Context, email, scene, jti, 
 	if n != 0 {
 		return ErrOTPInvalid
 	}
-
-	// 3. Write SQL (Failed: write back)
-	const query = `INSERT INTO users (email, password_hash) VALUES (?, ?)`
-	if _, err = r.db.ExecContext(ctx, query, email, pwd); err != nil {
-		var me *mysql.MySQLError
-		if errors.As(err, &me) && me.Number == 1062 || strings.Contains(err.Error(), "Duplicate entry") {
-			return ErrEmailAlreadyExists
-		}
-
-		r.undoOTTMark(ctx, keyStr, r.rdb, newTTL)
-		return ErrUnexpectedSQL
-	}
-
 	return nil
+}
+
+// CheckEmailExists Check if email exists
+func (r *authRepo) CheckEmailExists(ctx context.Context, email string) (bool, error) {
+	var dummy int
+	err := r.db.QueryRowContext(ctx,
+		"SELECT 1 FROM users WHERE email = ? LIMIT 1", email,
+	).Scan(&dummy)
+	if err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return false, ctx.Err()
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, ErrUnexpectedSQL
+	}
+	return true, nil
 }
 
 // ThrottleMatchAndConsumeCode Check verify throttle -> Match code -> Consume code -> Set jti unused
@@ -145,11 +165,6 @@ func (r *authRepo) StoreOTPAndThrottle(ctx context.Context, email, scene, codeID
 	}
 
 	return false, nil
-}
-
-func (r *authRepo) undoOTTMark(ctx context.Context, key string, rdb *redis.Client, ttlSec int) {
-	ttl := time.Duration(ttlSec) * time.Second
-	_ = rdb.Set(ctx, key, 0, ttl).Err()
 }
 
 type authRepo struct {

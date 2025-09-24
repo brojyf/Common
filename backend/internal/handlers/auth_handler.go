@@ -58,8 +58,8 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 		return
 	}
 
-	// 2.1  Call service: Create Account
-	err := h.svc.CreateAccount(ctx, email, scene, jti, req.Password)
+	// 2  Call service: Create Account
+	resp, err := h.svc.CreateAccount(ctx, email, scene, jti, req.Password, req.DeviceID)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrBadRequest):
@@ -74,10 +74,6 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 			httpx.WriteInternal(c)
 		}
 		return
-	}
-	// 2.2 Call service: Login
-	resp, err := h.svc.Login(ctx, email, req.Password, req.DeviceID)
-	if err != nil {
 	}
 
 	// 3. Write JSON

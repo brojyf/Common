@@ -18,6 +18,8 @@ var (
 	ErrRunScript = errors.New("run script error")
 	// ErrUnexpectedReply 500: Unexpected reply from lua
 	ErrUnexpectedReply = errors.New("unexpected response")
-	// E
-	ErrUnexpectedSQL = errors.New("unexpecteed error when running sql")
+	// ErrUnexpectedSQL 500: SQL Error
+	ErrUnexpectedSQL = errors.New("unexpected error when running sql")
+	// ErrUnexpectedRedis 500: Redis error
+	ErrUnexpectedRedis = errors.New("unexpected error when running redis")
 )

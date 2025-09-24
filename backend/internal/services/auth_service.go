@@ -25,7 +25,7 @@ import (
 
 type AuthService interface {
 	Login(ctx context.Context, email, password, deviceID string) (AuthResponse, error)
-	CreateAccount(ctx context.Context, email, scene, jti, pwd string) error
+	CreateAccount(ctx context.Context, email, scene, jti, pwd, deviceID string) (AuthResponse, error)
 	VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error)
 	RequestCode(ctx context.Context, email, scene string) (string, error)
 }
@@ -49,12 +49,7 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 	}
 
 	// 2. Repo
-	if err := s.repo.ThrottleLoginStoreDIDAndSession(cctx, email, password, deviceID); err != nil {
-		switch {
-
-		}
-	}
-
+	print(cctx)
 	// 3. Sign tokens
 
 	return AuthResponse{
@@ -66,7 +61,7 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 	}, nil
 }
 
-func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd string) error {
+func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd, deviceID string) (AuthResponse, error) {
 
 	// 0. Create sub context
 	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.CreateAccount)
@@ -74,30 +69,62 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd 
 
 	// 1. Check input
 	if !isValidPassword(pwd) || scene != "signup" {
-		return ErrBadRequest
+		return AuthResponse{}, ErrBadRequest
 	}
 
-	// 2. Repo
+	// 2. Check conflict
+	exist, err := s.repo.CheckEmailExists(cctx, email)
+	if err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return AuthResponse{}, ErrCtxError
+		}
+		return AuthResponse{}, ErrInternalServer
+	}
+	if exist {
+		return AuthResponse{}, ErrConflict
+	}
+
+	// 3. Check and mark jti
+	newTTL := int(config.C.JWT.OTT.Seconds())
+	if err := s.repo.ConsumeOTTJTI(cctx, email, scene, jti, newTTL); err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return AuthResponse{}, ErrCtxError
+		}
+		if errors.Is(err, repos.ErrOTPInvalid) {
+			return AuthResponse{}, ErrUnauthorized
+		}
+		return AuthResponse{}, ErrInternalServer
+	}
+
+	// 4. Create user
 	pwdHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
 	if err != nil {
-		return ErrInternalServer
+		return AuthResponse{}, ErrInternalServer
 	}
 	pwdHashStr := string(pwdHash)
-	newTTL := int(config.C.JWT.OTT.Seconds())
-	if err := s.repo.CheckOTTAndWriteUser(cctx, email, scene, jti, pwdHashStr, newTTL); err != nil {
-		if ctx_util.IsCtxDone(cctx, err) {
-			return ErrCtxError
+	uid, err := s.repo.CreateUser(cctx, email, pwdHashStr)
+	if err != nil {
+		// Rollback
+		s.repo.UndoOTTMark(cctx, email, scene, jti, newTTL)
+		if ctx_util.IsCtxDone(ctx, err) {
+			return AuthResponse{}, ErrCtxError
 		}
-		switch {
-		case errors.Is(err, repos.ErrOTPInvalid):
-			return ErrUnauthorized
-		default:
-			logx.LogError(cctx, "AuthSvc.CreateAccount.CheckOTTAndWriteUser", err)
-			return ErrInternalServer
+		if errors.Is(err, repos.ErrEmailAlreadyExists) {
+			return AuthResponse{}, ErrConflict
+		}
+		return AuthResponse{}, ErrInternalServer
+	}
+
+	// 5. Store device id and session
+	if err := s.repo.StoreDIDAndSession(cctx, uid, deviceID); err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return AuthResponse{}, ErrCtxError
 		}
 	}
 
-	return nil
+	// 6. Sign token
+
+	return AuthResponse{}, nil
 }
 
 func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error) {
