@@ -17,7 +17,7 @@ import (
 
 type AuthRepo interface {
 	StoreDIDAndSession(ctx context.Context, userID uint64, deviceID []byte, pushToken *string, rtkHash []byte, tokenVersion uint, expiresAt time.Time) error
-	UndoOTTMark(email, scene, jti string, ttlSec int)
+	UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int)
 	CreateUser(ctx context.Context, email, pwd string) (uint64, uint, error)
 	ConsumeOTTJTI(ctx context.Context, email, scene, jti string, newTTL int) error
 	CheckEmailExists(ctx context.Context, email string) (bool, error)
@@ -108,9 +108,7 @@ func (r *authRepo) StoreDIDAndSession(
 }
 
 // UndoOTTMark Undo one time token mark after sql failed
-func (r *authRepo) UndoOTTMark(email, scene, jti string, ttlSec int) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+func (r *authRepo) UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int) {
 	ttl := time.Duration(ttlSec) * time.Second
 	_ = r.rdb.Set(ctx, config.RedisKeyOTTJTIUsed(email, scene, jti), 0, ttl).Err()
 }

@@ -66,16 +66,9 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 
 func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd, deviceID string) (AuthResponse, error) {
 
-	// 0. Create sub context & Normalize
+	// 0. Create sub context
 	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.CreateAccount)
 	defer cancel()
-	email = strings.ToLower(strings.TrimSpace(email))
-	u, err := uuid.Parse(deviceID)
-	if err != nil {
-		logx.LogError(ctx, "AuthSvc.CreateAccount.ParseUUID", err)
-		return AuthResponse{}, ErrInternalServer
-	}
-	didByte := u[:]
 
 	// 1. Check input
 	if !isValidPassword(pwd) || scene != "signup" {
@@ -85,7 +78,7 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 	// 2. Check conflict
 	exist, err := s.repo.CheckEmailExists(cctx, email)
 	if err != nil {
-		if ctx_util.IsCtxDone(cctx, err) {
+		if ctx_util.IsCtxDone(ctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
 		logx.LogError(ctx, "AuthSvc.CreateAccount.CheckEmailExists", err)
@@ -98,7 +91,7 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 	// 3. Check and mark jti
 	newTTL := int(config.C.JWT.OTT.Seconds())
 	if err := s.repo.ConsumeOTTJTI(cctx, email, scene, jti, newTTL); err != nil {
-		if ctx_util.IsCtxDone(cctx, err) {
+		if ctx_util.IsCtxDone(ctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
 		if errors.Is(err, repos.ErrOTPInvalid) {
@@ -111,15 +104,15 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 	// 4. Create user
 	pwdHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
 	if err != nil {
-		logx.LogError(ctx, "AuthSvc.CreateAccount.pwdHash", err)
+		logx.LogError(ctx, "AuthSvc.CreateAccount.Hash", err)
 		return AuthResponse{}, ErrInternalServer
 	}
 	pwdHashStr := string(pwdHash)
 	uid, tkv, err := s.repo.CreateUser(cctx, email, pwdHashStr)
 	if err != nil {
 		// Rollback
-		s.repo.UndoOTTMark(email, scene, jti, newTTL)
-		if ctx_util.IsCtxDone(cctx, err) {
+		s.repo.UndoOTTMark(cctx, email, scene, jti, newTTL)
+		if ctx_util.IsCtxDone(ctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
 		if errors.Is(err, repos.ErrEmailAlreadyExists) {
@@ -138,7 +131,6 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 		if err == nil {
 			break
 		}
-		time.Sleep(time.Duration(50*(1<<i)) * time.Millisecond)
 	}
 	if err != nil {
 		logx.LogError(ctx, "AuthSvc.CreateAccount.SignATK", err)
@@ -151,19 +143,23 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 	}
 
 	// 6. Store device id and session
+	u, err := uuid.Parse(deviceID)
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.ParseUUID", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+	didByte := u[:]
 	exp := time.Now().Add(config.C.JWT.RTK)
 	if err := s.repo.StoreDIDAndSession(cctx, uid, didByte, nil, rtkHash, tkv, exp); err != nil {
-		if ctx_util.IsCtxDone(cctx, err) {
+		if ctx_util.IsCtxDone(ctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
-		logx.LogError(ctx, "AuthSvc.CreateAccount.StoreDIDAndSession", err)
-		return AuthResponse{}, ErrInternalServer
 	}
 
 	return AuthResponse{
 		atk,
 		"Bearer",
-		ttl,
+		config.C.JWT.ATK,
 		rtk,
 		uid,
 	}, nil
