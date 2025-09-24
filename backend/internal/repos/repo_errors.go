@@ -8,6 +8,8 @@ var (
 	// ErrOTPExpired 401
 	ErrOTPExpired = errors.New("expired one-time password")
 
+	ErrNotFound = errors.New("not found")
+
 	// ErrEmailAlreadyExists 409
 	ErrEmailAlreadyExists = errors.New("email already exists")
 

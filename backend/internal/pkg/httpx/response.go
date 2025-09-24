@@ -20,9 +20,9 @@ func TryWriteJSON(c *gin.Context, ctx context.Context, code int, data interface{
 	c.JSON(code, data)
 }
 
-func WriteConflict(c *gin.Context, msg string){
+func WriteConflict(c *gin.Context, msg string) {
 	WriteJSON(c, http.StatusConflict, gin.H{
-		"code": "CONFLICT",
+		"code":  "CONFLICT",
 		"error": msg,
 	})
 }
@@ -63,7 +63,7 @@ func WriteCtxError(c *gin.Context, err error) {
 	case errors.Is(err, context.Canceled):
 		c.AbortWithStatusJSON(499, gin.H{"code": "REQUEST_CANCELED", "error": "You canceled request."})
 	default:
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "error": "Internal server error."})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "error": "Internal server error. Please try again."})
 	}
 }
 

@@ -8,6 +8,8 @@ import (
 	"backend/internal/repos"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -16,6 +18,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -63,9 +66,16 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 
 func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd, deviceID string) (AuthResponse, error) {
 
-	// 0. Create sub context
+	// 0. Create sub context & Normalize
 	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.CreateAccount)
 	defer cancel()
+	email = strings.ToLower(strings.TrimSpace(email))
+	u, err := uuid.Parse(deviceID)
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.ParseUUID", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+	didByte := u[:]
 
 	// 1. Check input
 	if !isValidPassword(pwd) || scene != "signup" {
@@ -75,9 +85,10 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 	// 2. Check conflict
 	exist, err := s.repo.CheckEmailExists(cctx, email)
 	if err != nil {
-		if ctx_util.IsCtxDone(ctx, err) {
+		if ctx_util.IsCtxDone(cctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
+		logx.LogError(ctx, "AuthSvc.CreateAccount.CheckEmailExists", err)
 		return AuthResponse{}, ErrInternalServer
 	}
 	if exist {
@@ -87,44 +98,75 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd,
 	// 3. Check and mark jti
 	newTTL := int(config.C.JWT.OTT.Seconds())
 	if err := s.repo.ConsumeOTTJTI(cctx, email, scene, jti, newTTL); err != nil {
-		if ctx_util.IsCtxDone(ctx, err) {
+		if ctx_util.IsCtxDone(cctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
 		if errors.Is(err, repos.ErrOTPInvalid) {
 			return AuthResponse{}, ErrUnauthorized
 		}
+		logx.LogError(ctx, "AuthSvc.CreateAccount.ConsumeOTTJTI", err)
 		return AuthResponse{}, ErrInternalServer
 	}
 
 	// 4. Create user
 	pwdHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
 	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.pwdHash", err)
 		return AuthResponse{}, ErrInternalServer
 	}
 	pwdHashStr := string(pwdHash)
-	uid, err := s.repo.CreateUser(cctx, email, pwdHashStr)
+	uid, tkv, err := s.repo.CreateUser(cctx, email, pwdHashStr)
 	if err != nil {
 		// Rollback
-		s.repo.UndoOTTMark(cctx, email, scene, jti, newTTL)
-		if ctx_util.IsCtxDone(ctx, err) {
+		s.repo.UndoOTTMark(email, scene, jti, newTTL)
+		if ctx_util.IsCtxDone(cctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
 		if errors.Is(err, repos.ErrEmailAlreadyExists) {
 			return AuthResponse{}, ErrConflict
 		}
+		logx.LogError(ctx, "AuthSvc.CreateAccount.CreateUser", err)
 		return AuthResponse{}, ErrInternalServer
 	}
 
-	// 5. Store device id and session
-	if err := s.repo.StoreDIDAndSession(cctx, uid, deviceID); err != nil {
-		if ctx_util.IsCtxDone(ctx, err) {
-			return AuthResponse{}, ErrCtxError
+	// 5. Sign token
+	ttl := config.C.JWT.ATK
+	ttlDur := time.Duration(ttl) * time.Second
+	var atk string
+	for i := 0; i < 3; i++ {
+		atk, err = jwtx.SignATK(uid, tkv, ttlDur)
+		if err == nil {
+			break
 		}
+		time.Sleep(time.Duration(50*(1<<i)) * time.Millisecond)
+	}
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.SignATK", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+	rtk, rtkHash, err := generateRTK()
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.GenerateRTK", err)
+		return AuthResponse{}, ErrInternalServer
 	}
 
-	// 6. Sign token
+	// 6. Store device id and session
+	exp := time.Now().Add(config.C.JWT.RTK)
+	if err := s.repo.StoreDIDAndSession(cctx, uid, didByte, nil, rtkHash, tkv, exp); err != nil {
+		if ctx_util.IsCtxDone(cctx, err) {
+			return AuthResponse{}, ErrCtxError
+		}
+		logx.LogError(ctx, "AuthSvc.CreateAccount.StoreDIDAndSession", err)
+		return AuthResponse{}, ErrInternalServer
+	}
 
-	return AuthResponse{}, nil
+	return AuthResponse{
+		atk,
+		"Bearer",
+		ttl,
+		rtk,
+		uid,
+	}, nil
 }
 
 func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error) {
@@ -296,6 +338,22 @@ func isUUID(s string) bool {
 		return false
 	}
 	return u.Version() == 4 && u.Variant() == uuid.RFC4122
+}
+func generateRTK() (rtk string, rtkHash []byte, err error) {
+	// 1) 生成 32 字节随机数
+	raw := make([]byte, 32)
+	if _, err = rand.Read(raw); err != nil {
+		return "", nil, err
+	}
+
+	// 2) 明文 token 给客户端（base64url 无填充，安全）
+	rtk = base64.RawURLEncoding.EncodeToString(raw)
+
+	// 3) SHA-256 摘要，落库 VARBINARY(32)
+	sum := sha256.Sum256([]byte(rtk))
+	rtkHash = sum[:]
+
+	return rtk, rtkHash, nil
 }
 
 type authService struct {
