@@ -80,24 +80,24 @@ func (s *authService) CreateAccount(ctx context.Context, email, scene, jti, pwd 
 	// 2. Repo
 	pwdHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
 	if err != nil {
-		logx.LogError(ctx, "AuthSvc.GenerateFromPassword", err)
 		return ErrInternalServer
 	}
 	pwdHashStr := string(pwdHash)
 	newTTL := int(config.C.JWT.OTT.Seconds())
 	if err := s.repo.CheckOTTAndWriteUser(cctx, email, scene, jti, pwdHashStr, newTTL); err != nil {
-		if ctx_util.IsCtxDone(cctx, err) { return ErrCtxError }
+		if ctx_util.IsCtxDone(cctx, err) {
+			return ErrCtxError
+		}
 		switch {
 		case errors.Is(err, repos.ErrOTPInvalid):
 			return ErrUnauthorized
-		case errors.Is(err, repos.ErrEmailAlreadyExists):
-			return ErrConflict
 		default:
-			logx.LogError(ctx, "AuthSvc.CreateAccount.CheckOTTAndWriteUser", err)
+			logx.LogError(cctx, "AuthSvc.CreateAccount.CheckOTTAndWriteUser", err)
 			return ErrInternalServer
 		}
 	}
 
+	log.Printf("C A")
 	return nil
 }
 

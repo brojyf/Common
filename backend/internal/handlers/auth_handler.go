@@ -61,6 +61,19 @@ func (h *authHandler) HandleCreateAccount(c *gin.Context) {
 	// 2.1  Call service: Create Account
 	err := h.svc.CreateAccount(ctx, email, scene, jti, req.Password)
 	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrBadRequest):
+			httpx.WriteBadReq(c, "Invalid email or password.")
+		case errors.Is(err, services.ErrUnauthorized):
+			httpx.WriteUnauthorized(c, "Try to signup one more time.")
+		case errors.Is(err, services.ErrConflict):
+			httpx.WriteConflict(c, "Email already exists. Please login.")
+		case errors.Is(err, services.ErrCtxError):
+			httpx.WriteCtxError(c, err)
+		default:
+			httpx.WriteInternal(c)
+		}
+		return
 	}
 	// 2.2 Call service: Login
 	resp, err := h.svc.Login(ctx, email, req.Password, req.DeviceID)
