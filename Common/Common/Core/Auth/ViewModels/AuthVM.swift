@@ -61,7 +61,6 @@ final class AuthVM: ObservableObject {
             }, receiveValue: { [weak self] resp in
                 guard let self else { return }
                 self.path.append(AuthRoute.verify(email: email, scene: scene))
-                print("\(resp.otpID)")
             })
             .store(in: &cancellables)
     }

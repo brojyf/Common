@@ -10,22 +10,22 @@ import Combine
 
 final class AuthService {
     
-    func requestCode(email: String, scene: String) -> AnyPublisher<OTPID, NetworkingError>{
+    func requestCode(email: String, scene: String) -> AnyPublisher<CodeID, NetworkingError>{
         let body = RequstCodeBody(email: email, scene: scene)
         return NetworkingManager.post(
             url: API.Auth.requestCode,
             body: body
         )
-        .decode(type: OTPID.self, decoder: JSONDecoder())
+        .decode(type: CodeID.self, decoder: JSONDecoder())
         .mapError { ($0 as? NetworkingError) ?? .unknown }
         .eraseToAnyPublisher()
     }
 }
 
-struct OTPID: Codable {
-    let otpID: String
+struct CodeID: Codable {
+    let codeID: String
     enum CodingKeys: String, CodingKey {
-        case otpID = "otp_id"
+        case codeID = "code_id" // 后端字段是 "code_id"
     }
 }
 
