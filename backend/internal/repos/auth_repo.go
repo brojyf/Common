@@ -26,6 +26,7 @@ type AuthRepo interface {
 	ConsumeOTTJTI(ctx context.Context, email, scene, jti string, newTTL int) error
 	CheckEmailExists(ctx context.Context, email string) (bool, error)
 	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window, jtiTTL int) error
+	VerifyThrottle(ctx context.Context, email, scene string) (bool, error)
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
 }
 
@@ -232,6 +233,10 @@ func (r *authRepo) ThrottleMatchAndConsumeCode(ctx context.Context, email, scene
 	default:
 		return fmt.Errorf("%w:%s", ErrUnexpectedReply, err)
 	}
+}
+
+func (r *authRepo) VerifyThrottle(ctx context.Context, email, scene string) (bool, error) {
+	return false, nil
 }
 
 // StoreOTPAndThrottle Check throttle -> Set throttle -> Store code
