@@ -17,9 +17,15 @@ struct VerificationView: View {
 
     var body: some View {
         VStack {
-            Text("Code has been sent to \(email).")
+            Text("A Code has been sent to \(email).")
             Text("It'll be expired in 3 minutes.")
-            InputField("code", text: $code)
+            Text("Only the latest code is valid")
+            HStack {
+                InputField("code", text: $code)
+                Button("Send"){
+                    authVM.requestCodeWithRouter(email: email, scene: scene, router: false)
+                }
+            }
             Button("Verify"){
                 authVM.verifyCodeWithRouter(email: email, code: code, scene: scene)
             }

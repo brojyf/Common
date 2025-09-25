@@ -48,11 +48,35 @@ final class AuthVM: ObservableObject {
     }
     
     func verifyCodeWithRouter(email: String, code: String, scene: AuthScene){
-        path.append(AuthRoute.setPassword(email: email, scene: scene))
+        
+        let sceneStr = scene.toString
+        
+        guard let codeID = KCManager.load(.codeID), !codeID.isEmpty else {
+            self.hasError = true
+            self.errorMsg = "Please signup again."
+            self.resetFlow()
+            return
+        }
+        
+        svc.verifyCode(email: email, scene: sceneStr, code: code, codeID: codeID)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                guard let self else { return }
+                NetworkingManager.handleCompletion(completion, &self.hasError, &self.errorMsg)
+            }, receiveValue: { [weak self] resp in
+                guard let self else { return }
+                KCManager.delete(.codeID)
+                KCManager.save(.ott, resp.ott)
+                self.path.append(AuthRoute.setPassword(email: email, scene: scene))
+            })
+            .store(in: &cancellables)
     }
     
-    func requestCodeWithRouter(email: String, scene: AuthScene){
+    
+    func requestCodeWithRouter(email: String, scene: AuthScene, router: Bool = true){
+        
         let sceneStr = scene.toString
+        
         svc.requestCode(email: email, scene: sceneStr)
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { [weak self] completion in
@@ -60,7 +84,10 @@ final class AuthVM: ObservableObject {
                 NetworkingManager.handleCompletion(completion, &self.hasError, &self.errorMsg)
             }, receiveValue: { [weak self] resp in
                 guard let self else { return }
-                self.path.append(AuthRoute.verify(email: email, scene: scene))
+                KCManager.save(.codeID, "\(resp.codeID)")
+                if router {
+                    self.path.append(AuthRoute.verify(email: email, scene: scene))
+                }
             })
             .store(in: &cancellables)
     }
@@ -100,3 +127,4 @@ enum AuthScene: Hashable {
         }
     }
 }
+

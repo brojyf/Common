@@ -10,8 +10,19 @@ import Combine
 
 final class AuthService {
     
+    func verifyCode(email: String, scene: String, code: String, codeID: String) -> AnyPublisher<OTT, NetworkingError>{
+        let body = VerifyCodeBody(email: email, scene: scene, code: code, codeID: codeID)
+        return NetworkingManager.post(
+            url: API.Auth.verifyCode,
+            body: body
+        )
+        .decode(type: OTT.self, decoder: JSONDecoder())
+        .mapError { ($0 as? NetworkingError) ?? .unknown }
+        .eraseToAnyPublisher()
+    }
+    
     func requestCode(email: String, scene: String) -> AnyPublisher<CodeID, NetworkingError>{
-        let body = RequstCodeBody(email: email, scene: scene)
+        let body = RequestCodeBody(email: email, scene: scene)
         return NetworkingManager.post(
             url: API.Auth.requestCode,
             body: body
@@ -22,14 +33,34 @@ final class AuthService {
     }
 }
 
-struct CodeID: Codable {
-    let codeID: String
+
+struct OTT: Codable {
+    let ott: String
     enum CodingKeys: String, CodingKey {
-        case codeID = "code_id" // 后端字段是 "code_id"
+        case ott = "token"
     }
 }
 
-struct RequstCodeBody: Codable {
+struct VerifyCodeBody: Codable {
+    let email: String
+    let scene: String
+    let code: String
+    let codeID: String
+    enum CodingKeys: String, CodingKey {
+        case email, scene, code
+        case codeID = "code_id"
+    }
+}
+
+struct CodeID: Codable {
+    let codeID: String
+    enum CodingKeys: String, CodingKey {
+        case codeID = "code_id"
+    }
+}
+
+struct RequestCodeBody: Codable {
     let email: String
     let scene: String
 }
+

@@ -33,12 +33,3 @@ struct RootView: View {
     .environmentObject(dev.session)
     .environmentObject(dev.authVM)
 }
-
-#Preview {
-    let dev = dev.loggedIn()
-    NavigationStack {
-        RootView()
-    }
-    .environmentObject(dev.session)
-    .environmentObject(dev.authVM)
-}
