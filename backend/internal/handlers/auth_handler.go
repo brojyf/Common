@@ -32,7 +32,7 @@ func (h *authHandler) HandleLogin(c *gin.Context) {
 	}
 
 	// 2. Call service
-	resp, err := h.svc.Login(ctx, req.Email, req.Password, req.DeviceID)
+	resp, err := h.svc.Login(ctx, "ip", req.Email, req.Password, req.DeviceID)
 	if err != nil {
 	}
 

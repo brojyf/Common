@@ -16,6 +16,10 @@ import (
 )
 
 type AuthRepo interface {
+	ClearLoginCntLock(ip, email string)
+	UpdateLoginCntLock(ip, email string) error
+	Login(ctx context.Context, email, pwd string) (uint64, uint, error)
+	CheckLoginThrottle(ctx context.Context, ip, email string) (bool, error)
 	StoreDIDAndSession(ctx context.Context, userID uint64, deviceID []byte, pushToken *string, rtkHash []byte, tokenVersion uint, expiresAt time.Time) error
 	UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int)
 	CreateUser(ctx context.Context, email, pwd string) (uint64, uint, error)
@@ -25,6 +29,24 @@ type AuthRepo interface {
 	StoreOTPAndThrottle(ctx context.Context, email, scene, codeID, code string, otpTTL, throttleTTL int) (bool, error)
 }
 
+func (r *authRepo) ClearLoginCntLock(ip, email string) {
+
+}
+
+func (r *authRepo) UpdateLoginCntLock(ip, email string) error {
+	return nil
+}
+
+func (r *authRepo) Login(ctx context.Context, email, pwd string) (uint64, uint, error) {
+	return 1, 1, nil
+}
+
+func (r *authRepo) CheckLoginThrottle(ctx context.Context, ip, email string) (bool, error) {
+
+	return false, nil
+}
+
+// StoreDIDAndSession Store device id and session
 func (r *authRepo) StoreDIDAndSession(
 	ctx context.Context,
 	userID uint64,

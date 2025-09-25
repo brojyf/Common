@@ -27,7 +27,7 @@ import (
 )
 
 type AuthService interface {
-	Login(ctx context.Context, email, password, deviceID string) (AuthResponse, error)
+	Login(ctx context.Context, ip, email, password, deviceID string) (AuthResponse, error)
 	CreateAccount(ctx context.Context, email, scene, jti, pwd, deviceID string) (AuthResponse, error)
 	VerifyCodeAndGenToken(ctx context.Context, email, scene, codeID, code string) (string, error)
 	RequestCode(ctx context.Context, email, scene string) (string, error)
@@ -40,7 +40,7 @@ type AuthResponse struct {
 	UserID    uint64 `json:"user_id"`
 }
 
-func (s *authService) Login(ctx context.Context, email, password, deviceID string) (AuthResponse, error) {
+func (s *authService) Login(ctx context.Context, ip, email, password, deviceID string) (AuthResponse, error) {
 
 	// 0. Create sub context
 	cctx, cancel := context.WithTimeout(ctx, config.C.Timeouts.Login)
@@ -51,15 +51,79 @@ func (s *authService) Login(ctx context.Context, email, password, deviceID strin
 		return AuthResponse{}, ErrBadRequest
 	}
 
-	// 2. Repo
-	print(cctx)
-	// 3. Sign tokens
+	// 2. Check login throttle
+	rl, err := s.repo.CheckLoginThrottle(cctx, ip, email)
+	if err != nil {
+		if ctx_util.IsCtxDone(cctx, err) {
+			return AuthResponse{}, ErrCtxError
+		}
+		logx.LogError(ctx, "AuthSvc.CheckLoginThrottle", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+	if rl {
+		return AuthResponse{}, ErrTooManyRequest
+	}
+
+	// 3. Check password
+	uid, tkv, err := s.repo.Login(cctx, email, password)
+	if err != nil {
+		// 4. Update cnt/lock
+		for i := 0; i < 3; i++ {
+			err := s.repo.UpdateLoginCntLock(ip, email)
+			if err == nil {
+				break
+			}
+		}
+		if ctx_util.IsCtxDone(cctx, err) {
+			return AuthResponse{}, ErrCtxError
+		}
+		switch {
+
+		}
+	}
+
+	// 4. Update redis cnt/lock
+	s.repo.ClearLoginCntLock(ip, email)
+
+	// 5. Sign tokens
+	ttl := config.C.JWT.ATK
+	ttlDur := time.Duration(ttl) * time.Second
+	var atk string
+	for i := 0; i < 3; i++ {
+		atk, err = jwtx.SignATK(uid, tkv, ttlDur)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.SignATK", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+	rtk, rtkHash, err := generateRTK()
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.GenerateRTK", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+
+	// 6. Store device id and session
+	u, err := uuid.Parse(deviceID)
+	if err != nil {
+		logx.LogError(ctx, "AuthSvc.CreateAccount.ParseUUID", err)
+		return AuthResponse{}, ErrInternalServer
+	}
+	didByte := u[:]
+	exp := time.Now().Add(config.C.JWT.RTK)
+	if err := s.repo.StoreDIDAndSession(cctx, uid, didByte, nil, rtkHash, tkv, exp); err != nil {
+		if ctx_util.IsCtxDone(ctx, err) {
+			return AuthResponse{}, ErrCtxError
+		}
+	}
 
 	return AuthResponse{
-		ATK:       "this is atk",
+		ATK:       atk,
 		TokenType: "Bearer",
 		ExpiresIn: 3600,
-		RTK:       "this is rtk",
+		RTK:       rtk,
 		UserID:    0,
 	}, nil
 }
