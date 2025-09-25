@@ -15,6 +15,7 @@ final class PreviewContainer: ObservableObject {
     lazy var authVM = AuthVM(session: session)
     
     init (isLoggedIn: Bool = false, page: String = "nil"){
+        KCManager.save(.deviceID, "a2332d21-b576-4af5-a4bf-f2fe6f0c9b50")
         if isLoggedIn {
             session.login()
         }

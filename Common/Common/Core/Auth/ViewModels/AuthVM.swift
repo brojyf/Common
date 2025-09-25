@@ -37,8 +37,12 @@ final class AuthVM: ObservableObject {
         session.login()
     }
     
-    func createAcctounWithRouter(){
-        path.append(AuthRoute.setUsername)
+    func forgetPasswordWithRouter(){
+        path.append(AuthRoute.sendCode(scene: .resetPassword))
+    }
+    
+    func signupWithRouter(){
+        path.append(AuthRoute.sendCode(scene: .signup))
     }
     
     func forgetAndResetPassword(){
@@ -47,13 +51,38 @@ final class AuthVM: ObservableObject {
         }
     }
     
+    func createAcctounWithRouter(pwd: String){
+        
+        guard let deviceID = KCManager.load(.deviceID),
+              let token = KCManager.load(.ott),
+              !deviceID.isEmpty,
+              !token.isEmpty
+        else {
+            self.errorMsg = "Unknown Error."
+            self.hasError = true
+            return
+        }
+        
+        svc.createAccount(token: token, password: pwd, deviceID: deviceID)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                guard let self else { return }
+                NetworkingManager.handleCompletion(completion, &self.hasError, &self.errorMsg)
+            }, receiveValue: { [weak self] resp in
+                guard let self else { return }
+                print("Store AuthReponse")
+                path.append(AuthRoute.setUsername)
+            })
+            .store(in: &cancellables)
+    }
+    
     func verifyCodeWithRouter(email: String, code: String, scene: AuthScene){
         
         let sceneStr = scene.toString
         
         guard let codeID = KCManager.load(.codeID), !codeID.isEmpty else {
-            self.hasError = true
             self.errorMsg = "Please signup again."
+            self.hasError = true
             self.resetFlow()
             return
         }
@@ -90,14 +119,6 @@ final class AuthVM: ObservableObject {
                 }
             })
             .store(in: &cancellables)
-    }
-    
-    func forgetPasswordWithRouter(){
-        path.append(AuthRoute.sendCode(scene: .resetPassword))
-    }
-    
-    func signupWithRouter(){
-        path.append(AuthRoute.sendCode(scene: .signup))
     }
     
     func resetFlow() { path = .init() }

@@ -14,6 +14,7 @@ struct CommonApp: App {
     @StateObject private var authVM: AuthVM
     
     init() {
+        KCManager.deviceID()
         let session = SessionStore()
         _session = StateObject(wrappedValue: session)
         _authVM = StateObject(wrappedValue: AuthVM(session: session))

@@ -21,18 +21,19 @@ struct SetPasswordView: View {
             InputField(isSecure: true, "password", text: $password)
             InputField(isSecure: true, "Confirm Password", text: $passwordConfirmation)
             
-            if scene == .signup {
-                Button("Create"){
-                    authVM.createAcctounWithRouter()
-                }
-            } else {
-                Button("Reset"){
-                    authVM.forgetAndResetPassword()
-                }
-            }
+            smartButton
         }
         .padding()
         .navigationTitle(Text(scene == .signup ? "Create Account" : "Reset Password"))
+        .alert(isPresented: $authVM.hasError){
+            Alert(
+                title: Text("Error"),
+                message: Text(authVM.errorMsg ?? "Unknown Error"),
+                dismissButton: .default(Text("OK")){
+                    authVM.dismissError()
+                }
+            )
+        }
     }
 }
 
@@ -42,4 +43,32 @@ struct SetPasswordView: View {
         SetPasswordView(scene: .signup, email: "")
     }
     .environmentObject(dev.authVM)
+}
+
+// MARK: - Extension
+extension SetPasswordView {
+    private var smartButton: some View {
+        if scene == .signup {
+            Button("Create"){
+                if isSamePwd() {
+                    authVM.createAcctounWithRouter(pwd: password)
+                } else {
+                    authVM.errorMsg = "Password not match"
+                    authVM.hasError = true
+                }
+            }
+        } else {
+            Button("Reset"){
+                if isSamePwd() {
+                    authVM.forgetAndResetPassword()
+                } else {
+                    
+                }
+            }
+        }
+    }
+    
+    private func isSamePwd() -> Bool {
+        return password == passwordConfirmation
+    }
 }

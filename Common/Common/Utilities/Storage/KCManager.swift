@@ -10,6 +10,7 @@ import Foundation
 enum KCKey: String {
     case codeID
     case ott
+    case deviceID
 }
 
 final class KCManager {
@@ -63,5 +64,16 @@ final class KCManager {
         
         let status = SecItemDelete(query as CFDictionary)
         return status == errSecSuccess
+    }
+    
+    @discardableResult
+    static func deviceID() -> String{
+        if let id = load(.deviceID) {
+            return id
+        } else {
+            let newID = UUID().uuidString
+            save(.deviceID, newID)
+            return newID
+        }
     }
 }
