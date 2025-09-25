@@ -242,23 +242,10 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 		return "", ErrBadRequest
 	}
 
-	// 2.
-	rl, err := s.repo.VerifyThrottle(cctx, email, scene)
-	if err != nil {
-		if ctx_util.IsCtxDone(ctx, err) {
-			return "", ErrCtxError
-		}
-		logx.LogError(ctx, "AuthSvc.VerifyThrottle", err)
-		return "", ErrInternalServer
-	}
-	if rl {
-		return "", ErrTooManyRequest
-	}
-
-	// 3. Generate JTI
+	// 32. Generate JTI
 	jti := uuid.NewString()
 
-	// 4. Sign token
+	// 3. Sign token
 	ttl := config.C.JWT.OTT
 	token, err := jwtx.SignOTT(email, scene, jti, ttl)
 	if err != nil {
@@ -266,7 +253,7 @@ func (s *authService) VerifyCodeAndGenToken(ctx context.Context, email, scene, c
 		return "", ErrInternalServer
 	}
 
-	// 5. Call repo: Check throttle -> Match code -> Consume code -> Set jti unused
+	// 4. Call repo: Check throttle -> Match code -> Consume code -> Set jti unused
 	verifyLimit := config.C.RedisTTL.VerifyWindowLimit
 	window := config.C.RedisTTL.VerifyWindow
 	jtiUsedTTL := int(config.C.JWT.OTT.Seconds())
