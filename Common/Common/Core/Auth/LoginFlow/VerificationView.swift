@@ -32,6 +32,15 @@ struct VerificationView: View {
         }
         .padding()
         .navigationTitle(Text("Verification"))
+        .alert(isPresented: $authVM.hasError){
+            Alert(
+                title: Text("Error"),
+                message: Text(authVM.errorMsg ?? "Unknown Error"),
+                dismissButton: .default(Text("OK")){
+                    authVM.dismissError()
+                }
+            )
+        }
     }
 }
 

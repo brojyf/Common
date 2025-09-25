@@ -21,6 +21,15 @@ struct LoginView: View {
             buttonsSection
         }
         .padding()
+        .alert(isPresented: $vm.hasError){
+            Alert(
+                title: Text("Error"),
+                message: Text(vm.errorMsg ?? "Unknown Error"),
+                dismissButton: .default(Text("OK")){
+                    vm.dismissError()
+                }
+            )
+        }
     }
 }
 
