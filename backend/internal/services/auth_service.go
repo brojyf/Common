@@ -65,21 +65,20 @@ func (s *authService) Login(ctx context.Context, ip, email, password, deviceID s
 	}
 
 	// 3. Check password
-	uid, tkv, err := s.repo.Login(cctx, email, password)
+	user, err := s.repo.GetUser(ctx, email)
 	if err != nil {
-		// 4. Update cnt/lock
-		for i := 0; i < 3; i++ {
-			err := s.repo.UpdateLoginCntLock(ip, email)
-			if err == nil {
-				break
-			}
-		}
 		if ctx_util.IsCtxDone(cctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}
 		switch {
-
+		default:
+			logx.LogError(ctx, "AuthSvc.CreateAccount.Login", err)
+			return AuthResponse{}, ErrInternalServer
 		}
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.PwdHash), []byte(password))
+	if err != nil {
+		return AuthResponse{}, ErrUnauthorized
 	}
 
 	// 4. Update redis cnt/lock
@@ -90,7 +89,7 @@ func (s *authService) Login(ctx context.Context, ip, email, password, deviceID s
 	ttlDur := time.Duration(ttl) * time.Second
 	var atk string
 	for i := 0; i < 3; i++ {
-		atk, err = jwtx.SignATK(uid, tkv, ttlDur)
+		atk, err = jwtx.SignATK(user.UserID, user.TokenV, ttlDur)
 		if err == nil {
 			break
 		}
@@ -113,7 +112,7 @@ func (s *authService) Login(ctx context.Context, ip, email, password, deviceID s
 	}
 	didByte := u[:]
 	exp := time.Now().Add(config.C.JWT.RTK)
-	if err := s.repo.StoreDIDAndSession(cctx, uid, didByte, nil, rtkHash, tkv, exp); err != nil {
+	if err := s.repo.StoreDIDAndSession(cctx, user.UserID, didByte, nil, rtkHash, user.TokenV, exp); err != nil {
 		if ctx_util.IsCtxDone(ctx, err) {
 			return AuthResponse{}, ErrCtxError
 		}

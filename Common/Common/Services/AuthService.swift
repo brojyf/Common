@@ -10,6 +10,18 @@ import Combine
 
 final class AuthService {
     
+    func login(email: String, pwd: String, deviceID: String) -> AnyPublisher<AuthResponse, NetworkingError> {
+        let body = LoginRequest(deviceID: deviceID, email: email, password: pwd)
+        
+        return NetworkingManager.post(
+            url: API.Auth.login,
+            body: body
+        )
+        .decode(type: AuthResponse.self, decoder: JSONDecoder())
+        .mapError { ($0 as? NetworkingError) ?? .unknown}
+        .eraseToAnyPublisher()
+    }
+    
     func createAccount(token: String, password: String, deviceID: String) -> AnyPublisher<AuthResponse, NetworkingError> {
         
         let header = ["Authorization" : "Bearer \(token)"]
@@ -45,6 +57,17 @@ final class AuthService {
         .decode(type: CodeID.self, decoder: JSONDecoder())
         .mapError { ($0 as? NetworkingError) ?? .unknown }
         .eraseToAnyPublisher()
+    }
+}
+
+struct LoginRequest: Codable {
+    let deviceID: String
+    let email: String
+    let password: String
+    enum CodingKeys: String, CodingKey {
+        case deviceID = "device_id"
+        case email
+        case password
     }
 }
 

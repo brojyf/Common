@@ -4,6 +4,7 @@ import (
 	"backend/internal/pkg/httpx"
 	"backend/internal/services"
 	"errors"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,7 @@ func (h *authHandler) HandleLogin(c *gin.Context) {
 	// 2. Call service
 	resp, err := h.svc.Login(ctx, "ip", req.Email, req.Password, req.DeviceID)
 	if err != nil {
+		c.JSON(401, gin.H{"code": http.StatusUnauthorized, "message": err.Error()})
 	}
 
 	// 3. Write JSON

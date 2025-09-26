@@ -2,6 +2,7 @@ package repos
 
 import (
 	"backend/internal/config"
+	"backend/internal/models"
 	"backend/internal/pkg/ctx_util"
 	"backend/internal/repos/scripts"
 	"context"
@@ -18,11 +19,11 @@ import (
 type AuthRepo interface {
 	ClearLoginCntLock(ip, email string)
 	UpdateLoginCntLock(ip, email string) error
-	Login(ctx context.Context, email, pwd string) (uint64, uint, error)
+	GetUser(ctx context.Context, email string) (*models.User, error)
 	CheckLoginThrottle(ctx context.Context, ip, email string) (bool, error)
 	StoreDIDAndSession(ctx context.Context, userID uint64, deviceID []byte, pushToken *string, rtkHash []byte, tokenVersion uint, expiresAt time.Time) error
 	UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int)
-	CreateUser(ctx context.Context, email, pwd string) (uint64, uint, error)
+	CreateUser(ctx context.Context, email, pwdHash string) (uint64, uint, error)
 	ConsumeOTTJTI(ctx context.Context, email, scene, jti string, newTTL int) error
 	CheckEmailExists(ctx context.Context, email string) (bool, error)
 	ThrottleMatchAndConsumeCode(ctx context.Context, email, scene, codeID, code, jti string, limit, window, jtiTTL int) error
@@ -37,8 +38,29 @@ func (r *authRepo) UpdateLoginCntLock(ip, email string) error {
 	return nil
 }
 
-func (r *authRepo) Login(ctx context.Context, email, pwd string) (uint64, uint, error) {
-	return 1, 1, nil
+func (r *authRepo) GetUser(ctx context.Context, email string) (*models.User, error) {
+	const query = `
+        SELECT id, email, password_hash, token_version
+        FROM users
+        WHERE email = ?
+        LIMIT 1
+    `
+
+	u := &models.User{}
+	err := r.db.QueryRowContext(ctx, query, email).Scan(
+		&u.UserID,
+		&u.Email,
+		&u.PwdHash,
+		&u.TokenV,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	return u, nil
 }
 
 func (r *authRepo) CheckLoginThrottle(ctx context.Context, ip, email string) (bool, error) {
@@ -136,9 +158,9 @@ func (r *authRepo) UndoOTTMark(ctx context.Context, email, scene, jti string, tt
 }
 
 // CreateUser Write new user info to sql
-func (r *authRepo) CreateUser(ctx context.Context, email, pwd string) (uint64, uint, error) {
+func (r *authRepo) CreateUser(ctx context.Context, email, pwdHash string) (uint64, uint, error) {
 	const query = `INSERT INTO users (email, password_hash) VALUES (?, ?)`
-	res, err := r.db.ExecContext(ctx, query, email, pwd)
+	res, err := r.db.ExecContext(ctx, query, email, pwdHash)
 	if err != nil {
 		if ctx_util.IsCtxDone(ctx, err) {
 			return 0, 0, ctx.Err()

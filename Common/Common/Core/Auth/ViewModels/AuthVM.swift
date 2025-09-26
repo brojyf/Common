@@ -28,11 +28,7 @@ final class AuthVM: ObservableObject {
     
     // MARK: - Service Methods
     
-    // MARK: - Router Methods
-    func login(email: String, password: String){
-        session.login()
-    }
-    
+    // MARK: - Router Methods    
     func setUsernameFirstTime(){
         session.login()
     }
@@ -49,6 +45,30 @@ final class AuthVM: ObservableObject {
         withAnimation {
             path = NavigationPath()
         }
+    }
+    
+    func login(email: String, password: String){
+        
+        guard let deviceID = KCManager.load(.deviceID),
+              !deviceID.isEmpty
+        else {
+            self.errorMsg = "No device id."
+            self.hasError = true
+            return
+        }
+        
+        svc.login(email: email, pwd: password, deviceID: deviceID)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                guard let self else { return }
+                NetworkingManager.handleCompletion(completion, &self.hasError, &self.errorMsg)
+            }, receiveValue: {  [weak self] resp in
+                guard let self else { return }
+                print("Store AuthReponse")
+                session.login()
+                self.resetFlow()
+            })
+            .store(in: &cancellables)
     }
     
     func createAcctounWithRouter(pwd: String){
