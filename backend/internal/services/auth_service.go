@@ -65,7 +65,7 @@ func (s *authService) Login(ctx context.Context, ip, email, password, deviceID s
 	}
 
 	// 3. Check password
-	user, err := s.repo.GetUser(ctx, email)
+	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		if ctx_util.IsCtxDone(cctx, err) {
 			return AuthResponse{}, ErrCtxError

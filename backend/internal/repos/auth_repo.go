@@ -19,7 +19,7 @@ import (
 type AuthRepo interface {
 	ClearLoginCntLock(ip, email string)
 	UpdateLoginCntLock(ip, email string) error
-	GetUser(ctx context.Context, email string) (*models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	CheckLoginThrottle(ctx context.Context, ip, email string) (bool, error)
 	StoreDIDAndSession(ctx context.Context, userID uint64, deviceID []byte, pushToken *string, rtkHash []byte, tokenVersion uint, expiresAt time.Time) error
 	UndoOTTMark(ctx context.Context, email, scene, jti string, ttlSec int)
@@ -38,7 +38,7 @@ func (r *authRepo) UpdateLoginCntLock(ip, email string) error {
 	return nil
 }
 
-func (r *authRepo) GetUser(ctx context.Context, email string) (*models.User, error) {
+func (r *authRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	const query = `
         SELECT id, email, password_hash, token_version
         FROM users
