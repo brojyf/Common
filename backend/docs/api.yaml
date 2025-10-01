@@ -21,6 +21,8 @@ security:
 tags:
   - name: Auth
     description: authentication group
+  - name: User
+    description: user information group
 
 components:
   securitySchemes:
@@ -88,6 +90,29 @@ components:
           type: string
 
 paths:
+  /user/pfp/{uid}:
+    tags: [ User ]
+    get:
+      summary: get user profile photo
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          description: Unique ID of the user
+          schema:
+            type: integer
+            description: unsigned int 64
+      responses:
+        "200":
+          description: Successful response with image file
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: User not found
+
   /auth/login:
     post:
       summary: login
