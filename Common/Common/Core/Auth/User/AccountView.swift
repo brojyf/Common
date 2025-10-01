@@ -8,11 +8,26 @@
 import SwiftUI
 
 struct AccountView: View {
+    
+    @EnvironmentObject var vm: AuthVM
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack {
+            HStack {
+                Text("This is Account View")
+            }
+            
+            Button("Logout"){
+                withAnimation(.spring){
+                    vm.logout()
+                }
+            }
+        }
     }
 }
 
 #Preview {
+    let dev = dev.loggedIn()
     AccountView()
+        .environmentObject(dev.authVM)
 }

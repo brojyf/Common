@@ -11,18 +11,39 @@ struct MainAppRoot: View {
     @EnvironmentObject var session: SessionStore
     
     var body: some View {
-        Text("TabViews")
-        Button("Logout"){
-            withAnimation(.spring){
-                session.logout()
-            }
+        
+        TabView{
+            TodoView()
+                .tabItem{
+                    Label("Todos", systemImage: "list.bullet")
+                }
             
+            BillView()
+                .tabItem{
+                    Label("Bills", systemImage: "list.bullet")
+                }
+            
+            AddView()
+                .tabItem{
+                    Label("Add", systemImage: "list.bullet")
+                }
+            
+            FriendsView()
+                .tabItem{
+                    Label("Friends", systemImage: "list.bullet")
+                }
+            
+            AccountView()
+                .tabItem{
+                    Label("Account", systemImage: "list.bullet")
+                }
         }
     }
 }
 
+
 #Preview {
     let dev = dev.loggedIn()
     MainAppRoot()
-        .environmentObject(dev.session)
+        .environmentObject(dev.authVM)
 }

@@ -147,6 +147,10 @@ final class AuthVM: ObservableObject {
         hasError = false
         errorMsg = nil
     }
+    
+    func logout(){
+        session.logout()
+    }
 }
 
 // Mark: -- AuthRoute and AuthScene
